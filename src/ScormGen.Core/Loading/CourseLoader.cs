@@ -12,6 +12,7 @@ public class CourseLoader
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         PropertyNameCaseInsensitive = false,
+        MaxDepth = 32,
     };
 
     public Course Load(string json)

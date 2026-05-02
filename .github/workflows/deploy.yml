@@ -14,6 +14,12 @@ jobs:
         with:
           dotnet-version: '10.x'
 
+      - name: Restore
+        run: dotnet restore
+
+      - name: Test
+        run: dotnet test --configuration Release --verbosity normal
+
       - name: Publish
         run: dotnet publish src/ScormGen.Web/ScormGen.Web.csproj --configuration Release --output ./publish
 

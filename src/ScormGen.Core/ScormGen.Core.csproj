@@ -6,8 +6,5 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Markdig" Version="1.1.3" />
-  </ItemGroup>
 
 </Project>
