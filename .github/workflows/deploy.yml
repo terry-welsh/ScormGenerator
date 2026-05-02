@@ -1,11 +1,19 @@
-name: Deploy to Azure
+name: Deploy
 
 on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write  # allows pushing to ghcr.io
+
+env:
+  # Image name must be lowercase; AZURE_APP_NAME should be 'scorm-generator'
+  IMAGE: ghcr.io/${{ github.repository_owner }}/${{ vars.AZURE_APP_NAME }}
+
 jobs:
-  deploy:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,17 +25,52 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      - name: Test
-        run: dotnet test --configuration Release --verbosity normal
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
 
-      - name: Publish
-        run: dotnet publish src/ScormGen.Web/ScormGen.Web.csproj --configuration Release --output ./publish
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+  publish-image:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # Tag with both the commit SHA (immutable) and 'latest' (for manual pulls)
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+
+  deploy:
+    needs: publish-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ vars.AZURE_APP_NAME }}
-          package: ./publish
+      - name: Provision infrastructure and deploy
+        run: |
+          az deployment group create \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --template-file infra/main.bicep \
+            --parameters @infra/main.bicepparam \
+            --parameters containerImage="${{ env.IMAGE }}:${{ github.sha }}" \
+            --parameters registryUsername="${{ github.repository_owner }}" \
+            --parameters registryPassword="${{ secrets.GHCR_TOKEN }}" \
+            --mode Incremental

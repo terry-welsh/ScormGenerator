@@ -4,46 +4,80 @@ param appName string
 @description('Azure region')
 param location string = resourceGroup().location
 
-@description('App Service plan SKU')
-@allowed(['B1', 'B2', 'B3', 'S1', 'S2', 'P1v3'])
-param sku string = 'B1'
+@description('Container image to deploy')
+param containerImage string = 'mcr.microsoft.com/dotnet/aspnet:10.0'
 
-var planName = '${appName}-plan'
+@description('GitHub username (repository owner) for pulling from ghcr.io')
+param registryUsername string
 
-resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
-  name: planName
+@description('GitHub PAT with read:packages scope for pulling from ghcr.io')
+@secure()
+param registryPassword string
+
+var envName = '${appName}-env'
+
+// Consumption plan Container Apps Environment — free tier: 180,000 vCPU-seconds/month
+// Scale-to-zero means no charges when idle.
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
+  name: envName
   location: location
-  kind: 'linux'
-  sku: {
-    name: sku
-  }
-  properties: {
-    reserved: true
-  }
+  properties: {}
 }
 
-resource webApp 'Microsoft.Web/sites@2023-12-01' = {
+resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: appName
   location: location
   properties: {
-    serverFarmId: appServicePlan.id
-    httpsOnly: true
-    siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|10.0'
-      alwaysOn: sku != 'B1'
-      appSettings: [
+    managedEnvironmentId: containerAppsEnvironment.id
+    configuration: {
+      secrets: [
         {
-          name: 'ASPNETCORE_ENVIRONMENT'
-          value: 'Production'
-        }
-        {
-          name: 'ASPNETCORE_URLS'
-          value: 'http://+:8080'
+          name: 'ghcr-password'
+          value: registryPassword
         }
       ]
+      registries: [
+        {
+          server: 'ghcr.io'
+          username: registryUsername
+          passwordSecretRef: 'ghcr-password'
+        }
+      ]
+      ingress: {
+        external: true
+        targetPort: 8080
+        allowInsecure: false
+        transport: 'auto' // supports WebSockets (required for Blazor Server / SignalR)
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: appName
+          image: containerImage
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          env: [
+            {
+              name: 'ASPNETCORE_ENVIRONMENT'
+              value: 'Production'
+            }
+            {
+              name: 'ASPNETCORE_URLS'
+              value: 'http://+:8080'
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 0 // scale to zero when no traffic
+        maxReplicas: 1
+      }
     }
   }
 }
 
-output appUrl string = 'https://${webApp.properties.defaultHostName}'
-output appName string = webApp.name
+output appUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
+output appName string = containerApp.name

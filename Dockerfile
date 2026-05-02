@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ScormGenerator.sln .
+COPY ScormGenerator.slnx .
 COPY src/ src/
 RUN dotnet restore src/ScormGen.Web/ScormGen.Web.csproj
 RUN dotnet publish src/ScormGen.Web/ScormGen.Web.csproj \
