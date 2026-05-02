@@ -151,6 +151,19 @@ if ($existing) {
 }
 
 # ---------------------------------------------------------------------------
+# Resource provider registration
+# ---------------------------------------------------------------------------
+Write-Step "Registering Microsoft.App resource provider"
+
+$providerState = az provider show --namespace Microsoft.App --query registrationState -o tsv 2>$null
+if ($providerState -eq "Registered") {
+    Write-Skip "Microsoft.App"
+} else {
+    az provider register --namespace Microsoft.App --wait | Out-Null
+    Write-Ok "Registered"
+}
+
+# ---------------------------------------------------------------------------
 # GitHub Actions variables
 # ---------------------------------------------------------------------------
 Write-Step "GitHub Actions variables"
@@ -158,10 +171,32 @@ Write-Step "GitHub Actions variables"
 gh variable set AZURE_CLIENT_ID       --repo $githubRepo --body $clientId
 gh variable set AZURE_TENANT_ID       --repo $githubRepo --body $tenantId
 gh variable set AZURE_SUBSCRIPTION_ID --repo $githubRepo --body $subscriptionId
+gh variable set AZURE_RESOURCE_GROUP  --repo $githubRepo --body $ResourceGroup
+gh variable set AZURE_APP_NAME        --repo $githubRepo --body $AppName
+gh variable set AZURE_LOCATION        --repo $githubRepo --body $Location
 
 Write-Ok "AZURE_CLIENT_ID       = $clientId"
 Write-Ok "AZURE_TENANT_ID       = $tenantId"
 Write-Ok "AZURE_SUBSCRIPTION_ID = $subscriptionId"
+Write-Ok "AZURE_RESOURCE_GROUP  = $ResourceGroup"
+Write-Ok "AZURE_APP_NAME        = $AppName"
+Write-Ok "AZURE_LOCATION        = $Location"
+
+# ---------------------------------------------------------------------------
+# GHCR pull token (Container Apps runtime credential)
+# ---------------------------------------------------------------------------
+Write-Step "GitHub secret: GHCR_TOKEN"
+
+$existingSecret = gh secret list --repo $githubRepo --json name --jq '.[] | select(.name=="GHCR_TOKEN") | .name' 2>$null
+if ($existingSecret) {
+    Write-Skip "GHCR_TOKEN"
+} else {
+    Write-Host "   Container Apps needs a PAT with 'read:packages' scope to pull images at runtime." -ForegroundColor Yellow
+    Write-Host "   Create one at: https://github.com/settings/tokens/new?scopes=read:packages" -ForegroundColor Yellow
+    $pat = Read-Host "   Paste PAT"
+    gh secret set GHCR_TOKEN --repo $githubRepo --body $pat
+    Write-Ok "GHCR_TOKEN set"
+}
 
 # ---------------------------------------------------------------------------
 # Done
