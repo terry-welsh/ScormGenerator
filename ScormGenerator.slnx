@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ScormGen.Core/ScormGen.Core.csproj" />
+    <Project Path="src/ScormGen.Web/ScormGen.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ScormGen.Tests.Integration/ScormGen.Tests.Integration.csproj" />
+    <Project Path="tests/ScormGen.Tests.Unit/ScormGen.Tests.Unit.csproj" />
+  </Folder>
+</Solution>

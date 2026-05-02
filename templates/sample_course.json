@@ -1,0 +1,218 @@
+{
+  "course_id": "SAMPLE",
+  "title": "Sample Course: Advisory Fundamentals",
+  "version": "1.0",
+  "packages": [
+    {
+      "file_number": 1,
+      "file_name": "SAMPLE_MOD1_INTRO",
+      "content_type": "informational",
+      "title": "Sample Module: Introduction",
+      "content": [
+        {
+          "type": "heading",
+          "level": "h3",
+          "text": "Introduction"
+        },
+        {
+          "type": "paragraph",
+          "text": "Welcome to this sample module on strategic advisory principles. This document demonstrates the exact structure and formatting the SCORM generator expects. The headings, scenario format, and question format shown here must be mirrored in your own content file."
+        },
+        {
+          "type": "paragraph",
+          "text": "As a strategic advisor, your role extends beyond delivering work — it is to help clients make better decisions, navigate uncertainty, and achieve outcomes they genuinely care about. This requires skills that go beyond technical expertise."
+        },
+        {
+          "type": "heading",
+          "level": "h4",
+          "text": "What You Will Learn"
+        },
+        {
+          "type": "bulleted_list",
+          "items": [
+            "How to build trust through consistent, visible behaviors",
+            "How to structure honest conversations that strengthen client relationships",
+            "How to identify the right response in complex client situations",
+            "How to distinguish valuable advisory work from comfortable but hollow activity"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": "h4",
+          "text": "The Advisory Mindset"
+        },
+        {
+          "type": "paragraph",
+          "text": "Clients work with many vendors and consultants throughout their careers. Most of those relationships are transactional. What distinguishes a trusted advisor from a capable executor is not skill alone — it is the quality of the relationship."
+        },
+        {
+          "type": "paragraph",
+          "text": "That relationship is built through hundreds of small moments: the question you ask when someone seems stressed, the honest assessment you share when it would be easier to stay quiet, the curiosity you bring when you have already formed an opinion."
+        },
+        {
+          "type": "paragraph",
+          "text": "These behaviors are learnable. This module provides frameworks, a scenario exercise, and a knowledge check to help you practice them."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "text": "Key Takeaways"
+        },
+        {
+          "type": "bulleted_list",
+          "items": [
+            "Trust is earned through consistent, visible behaviors — not technical competence alone",
+            "Honest conversations, framed with genuine care, build stronger relationships than comfortable ones",
+            "Genuine curiosity produces better outcomes than performed expertise",
+            "Strategic advisors bring judgment and partnership, not just answers"
+          ]
+        }
+      ]
+    },
+    {
+      "file_number": 2,
+      "file_name": "SAMPLE_MOD1_SCENARIO",
+      "content_type": "ungraded",
+      "title": "Sample Module: Scenario Exercise",
+      "content": [
+        {
+          "type": "scenario",
+          "name": "The First Meeting",
+          "situation": "You have just joined a new client engagement. Today is your first working session with the client team. You have reviewed the project brief and formed some initial hypotheses, but you have been on-site for less than four hours.\n\nDuring the meeting, a senior stakeholder looks at you and asks directly: \"So — what do you think our biggest problem is?\"\n\nThe room is quiet. You have partial information. Everyone is waiting.",
+          "options": [
+            {
+              "letter": "A",
+              "text": "Draw on your experience with similar clients and deliver a confident answer. You have seen this type of challenge before and know what usually matters most. Giving a clear, direct response will demonstrate competence and make a strong first impression.",
+              "analysis": "Option A prioritizes impression over accuracy. Delivering a confident answer based on limited information risks anchoring the team on an incorrect framing. It may impress in the moment, but erodes trust quickly if the assumptions prove wrong."
+            },
+            {
+              "letter": "B",
+              "text": "Turn the question back before answering. Say: \"That is exactly what I am here to figure out. Before I share my initial read, I would love to hear your perspective — what do you see as the core challenge?\" This invites the stakeholder's view and gives you more context before committing to a position.",
+              "analysis": "Option B is strong. Inviting the stakeholder's view before sharing your own demonstrates genuine curiosity, shows respect for their knowledge, and produces better information. Most experienced clients find this approach more compelling than a quick confident answer."
+            },
+            {
+              "letter": "C",
+              "text": "Be transparent about your current limitations. Say: \"I have only been here a few hours, so I want to be honest — I do not yet have enough context to give you a confident answer. What I can share is what the brief raised for me and the questions I still need to answer. Would it be useful to walk through those?\"",
+              "analysis": "Option C is the strongest response. It is honest about current limitation without being apologetic or passive. It shows integrity, grounds the conversation in what you actually know, and opens a collaborative dialogue. Senior stakeholders consistently report that this kind of response builds more trust than false confidence."
+            }
+          ],
+          "correct_option": "C",
+          "key_insight": "The strongest first impression is not a confident answer — it is demonstrated integrity. Clients who observe you accurately acknowledging uncertainty will trust your confident assessments more, because they know you distinguish between what you know and what you are still learning."
+        }
+      ]
+    },
+    {
+      "file_number": 3,
+      "file_name": "SAMPLE_MOD1_QUIZ",
+      "content_type": "ungraded",
+      "title": "Sample Module: Knowledge Check",
+      "content": [
+        {
+          "type": "multiple_choice",
+          "question": "What is the primary risk of responding confidently when you have limited information?",
+          "options": [
+            { "letter": "A", "text": "You may come across as overconfident to junior team members" },
+            { "letter": "B", "text": "You may anchor the conversation on a wrong assumption that takes significant time to correct" },
+            { "letter": "C", "text": "The client will always expect the same level of confidence in future meetings" },
+            { "letter": "D", "text": "Confidence is never appropriate during the early stages of an engagement" }
+          ],
+          "correct_answer": "B",
+          "explanation": "Premature confidence based on incomplete information can commit the team to a flawed framing, wasting time and reducing trust once the gap between your assertion and reality becomes visible."
+        },
+        {
+          "type": "multiple_choice",
+          "question": "Why is turning a question back to the client considered a strong advisory behavior?",
+          "options": [
+            { "letter": "A", "text": "It gives you time to think without appearing uncertain" },
+            { "letter": "B", "text": "It signals that you are not responsible for answering difficult questions" },
+            { "letter": "C", "text": "It demonstrates genuine curiosity and respect for the client's knowledge and perspective" },
+            { "letter": "D", "text": "It is a technique for avoiding opinions that might be unpopular" }
+          ],
+          "correct_answer": "C",
+          "explanation": "Asking for the client's view before offering your own shows that you value their knowledge. It also produces better information and shifts the dynamic from advice-giving to collaborative problem-solving."
+        },
+        {
+          "type": "multiple_choice",
+          "question": "Which behavior is most consistent with building long-term trust in an early client meeting?",
+          "options": [
+            { "letter": "A", "text": "Demonstrating comprehensive industry knowledge during introductions" },
+            { "letter": "B", "text": "Agreeing with whatever the senior stakeholder says to establish rapport" },
+            { "letter": "C", "text": "Showing integrity by acknowledging the limits of your current knowledge while offering what you do know" },
+            { "letter": "D", "text": "Delivering a clear, decisive answer to every question asked" }
+          ],
+          "correct_answer": "C",
+          "explanation": "Long-term trust is built on reliability and honesty. A client who sees you accurately acknowledge uncertainty will trust your confident assessments more — because they know you do not bluff."
+        }
+      ]
+    },
+    {
+      "file_number": 4,
+      "file_name": "SAMPLE_MOD1_ASSESS",
+      "content_type": "graded",
+      "title": "Sample Module: Final Assessment",
+      "passing_score": 0.8,
+      "content": [
+        {
+          "type": "multiple_choice",
+          "question": "According to the module, what primarily distinguishes a trusted advisor from a capable executor?",
+          "options": [
+            { "letter": "A", "text": "Superior technical credentials and years of domain experience" },
+            { "letter": "B", "text": "The quality of the relationship, built through consistent and visible behaviors over time" },
+            { "letter": "C", "text": "The ability to deliver projects under budget and ahead of schedule" },
+            { "letter": "D", "text": "Having previously worked in the client's specific industry" }
+          ],
+          "correct_answer": "B",
+          "explanation": "The module states that what distinguishes a trusted advisor is not skill alone — it is the quality of the relationship, built through hundreds of small behavioral moments over the course of an engagement."
+        },
+        {
+          "type": "multiple_choice",
+          "question": "In the scenario, why is Option C described as the strongest response?",
+          "options": [
+            { "letter": "A", "text": "It avoids giving an opinion the stakeholder might disagree with" },
+            { "letter": "B", "text": "It is the most time-efficient use of the meeting" },
+            { "letter": "C", "text": "It demonstrates integrity by combining honest acknowledgment of limitations with a constructive offer" },
+            { "letter": "D", "text": "It shows the most domain expertise of the three options" }
+          ],
+          "correct_answer": "C",
+          "explanation": "Option C works because it is honest about what you do not know while actively offering what you do know. This models the kind of advisory relationship clients trust and remember."
+        },
+        {
+          "type": "multiple_choice",
+          "question": "What does the module identify as the result of genuine curiosity in client conversations?",
+          "options": [
+            { "letter": "A", "text": "It takes more time but produces the same outcomes as direct confident advice" },
+            { "letter": "B", "text": "It is mainly useful for building early rapport and less valuable later in an engagement" },
+            { "letter": "C", "text": "It produces better outcomes than performed expertise" },
+            { "letter": "D", "text": "It is most appropriate for junior consultants who are still building domain knowledge" }
+          ],
+          "correct_answer": "C",
+          "explanation": "The Key Takeaways state directly that genuine curiosity produces better outcomes than performed expertise. This is a core principle running through the entire module."
+        },
+        {
+          "type": "multiple_choice",
+          "question": "Which of the following best describes what the module means by performed expertise?",
+          "options": [
+            { "letter": "A", "text": "Going through the motions of competence without genuine curiosity or investment in the client's situation" },
+            { "letter": "B", "text": "Giving a formal presentation of your qualifications at the start of an engagement" },
+            { "letter": "C", "text": "Delivering high-quality technical work using established structured frameworks" },
+            { "letter": "D", "text": "Preparing thoroughly for every client interaction by reviewing background materials" }
+          ],
+          "correct_answer": "A",
+          "explanation": "Performed expertise is the opposite of genuine engagement — it looks like knowledge and competence but lacks authentic curiosity and investment. The module emphasizes that clients detect this pattern over time, which erodes trust."
+        },
+        {
+          "type": "multiple_choice",
+          "question": "What does the module recommend when you genuinely do not know the answer to a client's question?",
+          "options": [
+            { "letter": "A", "text": "Offer your best estimate confidently so as not to appear uncertain or unprepared" },
+            { "letter": "B", "text": "Deflect by redirecting to a topic where you have stronger knowledge" },
+            { "letter": "C", "text": "Promise to follow up later with a written answer and move on to the next agenda item" },
+            { "letter": "D", "text": "Acknowledge the limitation honestly while offering what you do currently know" }
+          ],
+          "correct_answer": "D",
+          "explanation": "The scenario and module content both recommend honest acknowledgment of uncertainty paired with an offer of what you can contribute. This is more trustworthy and more useful than bluffing or deflecting, and it models the kind of integrity that builds long-term advisory relationships."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+services:
+  scorm-gen:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    volumes:
+      - ./src:/src/src
+    command: dotnet watch run --project /src/src/ScormGen.Web/ScormGen.Web.csproj --urls http://+:8080

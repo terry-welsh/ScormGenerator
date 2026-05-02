@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <ImportMap />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#98c93d',
+                        accent:  '#49c6e5',
+                        success: '#6ca437',
+                        danger:  '#da7552'
+                    }
+                }
+            }
+        }
+    </script>
+    <HeadOutlet @rendermode="InteractiveServer" />
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <Routes @rendermode="InteractiveServer" />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="scorm-gen.js"></script>
+</body>
+
+</html>
