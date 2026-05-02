@@ -72,7 +72,8 @@ jobs:
           az deployment group create \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
             --template-file infra/main.bicep \
-            --parameters @infra/main.bicepparam \
+            --parameters appName="${{ vars.AZURE_APP_NAME }}" \
+            --parameters location="eastus" \
             --parameters containerImage="${{ env.IMAGE }}:${{ github.sha }}" \
             --parameters registryUsername="${{ github.repository_owner }}" \
             --parameters registryPassword="${{ secrets.GHCR_TOKEN }}" \
