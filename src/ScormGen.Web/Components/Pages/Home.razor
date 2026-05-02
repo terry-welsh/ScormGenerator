@@ -1,5 +1,9 @@
 @page "/"
+@using Microsoft.Extensions.Caching.Memory
 @inject IJSRuntime JS
+@inject ScormGen.Core.Loading.CourseLoader Loader
+@inject ScormGen.Core.Packaging.ScormPackager Packager
+@inject Microsoft.Extensions.Caching.Memory.IMemoryCache DownloadCache
 
 <PageTitle>SCORM Generator — Upload</PageTitle>
 
@@ -65,14 +69,24 @@
             using var stream = _file.OpenReadStream(maxAllowedSize: 16 * 1024 * 1024);
             using var ms = new MemoryStream();
             await stream.CopyToAsync(ms);
-            var fileBytes = ms.ToArray();
+            var json = System.Text.Encoding.UTF8.GetString(ms.ToArray());
 
-            await JS.InvokeVoidAsync("scormGen.submitAndDownload", fileBytes, _file.Name);
+            var course = Loader.Load(json);
+            var zipBytes = Packager.PackageCourse(course);
+
+            var id = Guid.NewGuid().ToString("N");
+            DownloadCache.Set($"dl_{id}", zipBytes, TimeSpan.FromMinutes(5));
+
+            await JS.InvokeVoidAsync("scormGen.triggerDownload", $"/download/{id}");
             _downloadReady = true;
+        }
+        catch (ArgumentException ex)
+        {
+            _error = ex.Message;
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            _error = $"Generation failed: {ex.Message}";
         }
         finally
         {

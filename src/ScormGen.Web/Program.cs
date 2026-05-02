@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using ScormGen.Core.Loading;
 using ScormGen.Core.Packaging;
 using ScormGen.Web.Components;
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<CourseLoader>();
 builder.Services.AddScoped<ScormPackager>();
 
@@ -56,6 +58,14 @@ app.MapPost("/generate", async (HttpContext ctx, CourseLoader loader, ScormPacka
         return Results.StatusCode(500);
     }
 }).DisableAntiforgery();
+
+app.MapGet("/download/{id}", (string id, IMemoryCache cache) =>
+{
+    if (!cache.TryGetValue($"dl_{id}", out byte[]? bytes) || bytes is null)
+        return Results.NotFound();
+    cache.Remove($"dl_{id}");
+    return Results.File(bytes, "application/zip", "scorm_packages.zip");
+});
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
