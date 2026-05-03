@@ -5,6 +5,7 @@ namespace ScormGen.Core.Templates;
 internal static class TemplateResources
 {
     internal static readonly string ScormApiJs = Load("scorm-api.js");
+    internal static readonly string Scorm12ApiJs = Load("scorm12-api.js");
     internal static readonly string BaseStyles = "<style>\n" + Load("base-styles.css") + "\n    </style>";
 
     private static string Load(string name)

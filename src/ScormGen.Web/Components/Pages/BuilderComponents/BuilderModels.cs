@@ -4,7 +4,7 @@ public static class BuilderStyles
 {
     public const string Input    = "w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50";
     public const string Textarea = "w-full border border-gray-300 rounded-lg px-4 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/50";
-    public const string AddBtn   = "text-xs px-3 py-1.5 text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors";
+    public const string AddBtn   = "text-xs px-4 py-1.5 text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors";
 }
 
 public class BPackage

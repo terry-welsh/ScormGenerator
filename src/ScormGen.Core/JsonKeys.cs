@@ -6,6 +6,7 @@ public static class JsonKeys
     public const string CourseId    = "course_id";
     public const string Title       = "title";
     public const string Version     = "version";
+    public const string Format      = "format";
     public const string Packages    = "packages";
 
     // Package

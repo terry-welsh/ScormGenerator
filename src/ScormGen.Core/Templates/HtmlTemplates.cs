@@ -90,7 +90,10 @@ public static class HtmlTemplates
     // HTML page templates
     // =========================================================================
 
-    public static string GetInformationalHtml(string title, string contentHtml) => $$"""
+    public static string GetInformationalHtml(string title, string contentHtml, string? apiJs = null)
+    {
+        var js = apiJs ?? ScormApiJs;
+        return $$"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,7 +101,7 @@ public static class HtmlTemplates
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{H(title)}}</title>
     {{BaseStyles}}
-    <script>{{ScormApiJs}}</script>
+    <script>{{js}}</script>
 </head>
 <body>
     <main class="content-wrapper">
@@ -156,6 +159,7 @@ public static class HtmlTemplates
 </body>
 </html>
 """;
+    }
 
     public static string GetScenarioHtml(
         string title,
@@ -163,7 +167,11 @@ public static class HtmlTemplates
         string optionsHtml,
         string analysisHtml,
         string additionalHtml,
-        string correctOption) => $$"""
+        string correctOption,
+        string? apiJs = null)
+    {
+        var js = apiJs ?? ScormApiJs;
+        return $$"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -171,7 +179,7 @@ public static class HtmlTemplates
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{H(title)}}</title>
     {{BaseStyles}}
-    <script>{{ScormApiJs}}</script>
+    <script>{{js}}</script>
 </head>
 <body>
     <main class="content-wrapper">
@@ -232,8 +240,12 @@ public static class HtmlTemplates
 </body>
 </html>
 """;
+    }
 
-    public static string GetUngradedQuizHtml(string title, string questionsHtml, int questionCount) => $$"""
+    public static string GetUngradedQuizHtml(string title, string questionsHtml, int questionCount, string? apiJs = null)
+    {
+        var js = apiJs ?? ScormApiJs;
+        return $$"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -241,7 +253,7 @@ public static class HtmlTemplates
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{H(title)}}</title>
     {{BaseStyles}}
-    <script>{{ScormApiJs}}</script>
+    <script>{{js}}</script>
 </head>
 <body>
     <main class="content-wrapper">
@@ -306,6 +318,7 @@ public static class HtmlTemplates
 </body>
 </html>
 """;
+    }
 
     public static string GetGradedQuizHtml(
         string title,
@@ -315,7 +328,11 @@ public static class HtmlTemplates
         int passingPercent,
         int minCorrect,
         string correctAnswersJson,
-        string explanationsJson) => $$"""
+        string explanationsJson,
+        string? apiJs = null)
+    {
+        var js = apiJs ?? ScormApiJs;
+        return $$"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -323,7 +340,7 @@ public static class HtmlTemplates
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{H(title)}}</title>
     {{BaseStyles}}
-    <script>{{ScormApiJs}}</script>
+    <script>{{js}}</script>
 </head>
 <body>
     <main class="content-wrapper">
@@ -449,4 +466,5 @@ public static class HtmlTemplates
 </body>
 </html>
 """;
+    }
 }

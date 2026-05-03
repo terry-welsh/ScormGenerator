@@ -28,6 +28,15 @@ public class CourseLoader
             throw new ArgumentException($"Malformed course JSON: {ex.Message}", ex);
         }
 
+        using var doc = JsonDocument.Parse(json);
+        if (doc.RootElement.TryGetProperty("format", out var fmtEl))
+        {
+            var format = fmtEl.GetString()?.ToLowerInvariant() == "scorm_12"
+                ? Models.ScormFormat.Scorm12
+                : Models.ScormFormat.Scorm2004;
+            course = course with { Format = format };
+        }
+
         Validate(course);
         return course;
     }

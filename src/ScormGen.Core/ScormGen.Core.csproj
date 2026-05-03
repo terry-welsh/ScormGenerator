@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Templates\Resources\scorm-api.js" />
+    <EmbeddedResource Include="Templates\Resources\scorm12-api.js" />
     <EmbeddedResource Include="Templates\Resources\base-styles.css" />
   </ItemGroup>
 

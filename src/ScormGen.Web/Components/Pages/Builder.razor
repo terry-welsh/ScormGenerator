@@ -11,7 +11,7 @@
 
 <div class="max-w-3xl mx-auto">
     <h1 class="text-2xl font-bold mb-2">Course Builder</h1>
-    <p class="text-gray-500 mb-6 text-sm">Build a course definition interactively and generate SCORM 2004 packages.</p>
+    <p class="text-gray-500 mb-6 text-sm">Build a course definition interactively and generate SCORM packages.</p>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 class="text-base font-semibold mb-4 text-gray-800">Course Details</h2>
@@ -27,6 +27,13 @@
             <div class="sm:col-span-2">
                 <label class="block text-xs font-medium text-gray-600 mb-1">Course Title</label>
                 <input @bind="_courseTitle" placeholder="e.g. Introduction to Safety" class="@BuilderStyles.Input" />
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-gray-600 mb-1">SCORM Version</label>
+                <select @bind="_format" class="@BuilderStyles.Input">
+                    <option value="scorm_2004">SCORM 2004 3rd Edition</option>
+                    <option value="scorm_12">SCORM 1.2</option>
+                </select>
             </div>
         </div>
     </div>
@@ -73,6 +80,7 @@
     private string _courseId = "";
     private string _courseTitle = "";
     private string _version = "1.0";
+    private string _format = "scorm_2004";
     private readonly List<BPackage> _packages = new();
     private bool _generating;
     private bool _downloadReady;
@@ -143,6 +151,7 @@
             [JsonKeys.CourseId] = _courseId,
             [JsonKeys.Title]    = _courseTitle,
             [JsonKeys.Version]  = _version,
+            [JsonKeys.Format]   = _format,
             [JsonKeys.Packages] = pkgsArray
         }.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
     }
