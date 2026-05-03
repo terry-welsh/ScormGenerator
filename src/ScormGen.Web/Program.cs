@@ -63,6 +63,7 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 app.UseRateLimiter();
 app.UseAntiforgery();
+app.UseStaticFiles(); // serves wwwroot files not in the MapStaticAssets manifest (e.g. build-generated tailwind.css)
 app.MapStaticAssets();
 
 app.MapPost("/generate", async (HttpContext ctx, ILogger<Program> logger) =>
