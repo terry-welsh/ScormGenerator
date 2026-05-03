@@ -11,4 +11,33 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
+  <!-- ── Tailwind CSS standalone CLI ───────────────────────────────────── -->
+  <PropertyGroup>
+    <TailwindVersion>3.4.17</TailwindVersion>
+    <TailwindToolsDir>$(MSBuildProjectDirectory)/tools</TailwindToolsDir>
+    <TailwindPlatform Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows-x64</TailwindPlatform>
+    <TailwindPlatform Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x64</TailwindPlatform>
+    <TailwindPlatform Condition="$([MSBuild]::IsOSPlatform('OSX'))">macos-arm64</TailwindPlatform>
+    <TailwindExeExt Condition="$([MSBuild]::IsOSPlatform('Windows'))">.exe</TailwindExeExt>
+    <TailwindExeExt Condition="!$([MSBuild]::IsOSPlatform('Windows'))"></TailwindExeExt>
+    <TailwindExe>$(TailwindToolsDir)/tailwindcss$(TailwindExeExt)</TailwindExe>
+    <TailwindDownloadUrl>https://github.com/tailwindlabs/tailwindcss/releases/download/v$(TailwindVersion)/tailwindcss-$(TailwindPlatform)$(TailwindExeExt)</TailwindDownloadUrl>
+  </PropertyGroup>
+
+  <Target Name="DownloadTailwindCli" BeforeTargets="BuildTailwindCss"
+          Condition="!Exists('$(TailwindExe)')">
+    <MakeDir Directories="$(TailwindToolsDir)" />
+    <DownloadFile SourceUrl="$(TailwindDownloadUrl)"
+                  DestinationFolder="$(TailwindToolsDir)"
+                  DestinationFileName="tailwindcss$(TailwindExeExt)" />
+    <Exec Command="chmod +x &quot;$(TailwindExe)&quot;"
+          Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />
+  </Target>
+
+  <Target Name="BuildTailwindCss" BeforeTargets="BeforeBuild">
+    <MakeDir Directories="$(MSBuildProjectDirectory)/wwwroot/css" />
+    <Exec Command="&quot;$(TailwindExe)&quot; -i wwwroot/css/tailwind.input.css -o wwwroot/css/tailwind.css --minify"
+          WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
 </Project>

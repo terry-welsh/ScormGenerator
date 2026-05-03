@@ -25,6 +25,16 @@ jobs:
           dotnet test --no-build --configuration Release --verbosity normal
           --collect "XPlat Code Coverage"
           --results-directory ./coverage
+          --logger "trx;LogFileName=test-results.trx"
+          --settings tests/coverage.runsettings
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test Results
+          path: ./coverage/**/*.trx
+          reporter: dotnet-trx
 
       - name: Upload coverage
         uses: actions/upload-artifact@v7

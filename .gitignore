@@ -8,3 +8,6 @@ TestResults/
 .env.*
 publish/
 **/wwwroot/lib/
+**/wwwroot/css/tailwind.css
+**/tools/tailwindcss
+**/tools/tailwindcss.exe

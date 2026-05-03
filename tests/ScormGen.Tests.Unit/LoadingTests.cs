@@ -5,7 +5,6 @@ namespace ScormGen.Tests.Unit;
 
 public class LoadingTests
 {
-    private readonly CourseLoader _loader = new();
 
     [Fact]
     public void Load_ValidJson_ReturnsCourse()
@@ -27,7 +26,7 @@ public class LoadingTests
             }
             """;
 
-        var course = _loader.Load(json);
+        var course = CourseLoader.Load(json);
 
         Assert.Equal("Test Course", course.Title);
         Assert.Equal("TEST", course.CourseId);
@@ -40,7 +39,7 @@ public class LoadingTests
     {
         var json = File.ReadAllText(
             Path.Combine("..", "..", "..", "..", "..", "templates", "sample_course.json"));
-        var course = _loader.Load(json);
+        var course = CourseLoader.Load(json);
 
         Assert.Equal(4, course.Packages.Count);
         Assert.Equal("informational", course.Packages[0].ContentType);
@@ -52,14 +51,14 @@ public class LoadingTests
     public void Load_MissingTitle_Throws()
     {
         var json = """{"course_id":"X","title":"","version":"1.0","packages":[]}""";
-        Assert.Throws<ArgumentException>(() => _loader.Load(json));
+        Assert.Throws<ArgumentException>(() => CourseLoader.Load(json));
     }
 
     [Fact]
     public void Load_EmptyPackages_Throws()
     {
         var json = """{"course_id":"X","title":"T","version":"1.0","packages":[]}""";
-        Assert.Throws<ArgumentException>(() => _loader.Load(json));
+        Assert.Throws<ArgumentException>(() => CourseLoader.Load(json));
     }
 
     [Fact]
@@ -72,7 +71,7 @@ public class LoadingTests
                              "title": "T", "content": [] }]
             }
             """;
-        Assert.Throws<ArgumentException>(() => _loader.Load(json));
+        Assert.Throws<ArgumentException>(() => CourseLoader.Load(json));
     }
 
     [Fact]
@@ -85,6 +84,6 @@ public class LoadingTests
                              "title": "T", "content": [] }]
             }
             """;
-        Assert.Throws<ArgumentException>(() => _loader.Load(json));
+        Assert.Throws<ArgumentException>(() => CourseLoader.Load(json));
     }
 }

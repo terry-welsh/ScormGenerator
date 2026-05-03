@@ -29,27 +29,27 @@ public class MarkdownConverter
     private static readonly Regex ExplanationRx      = new(@"^Explanation:\s*(.+)$", RegexOptions.Compiled);
     private static readonly Regex PlainBullet        = new(@"^-\s+(.+)$", RegexOptions.Compiled);
 
-    private readonly CourseLoader _loader = new();
+    private static readonly System.Text.Json.JsonSerializerOptions SerializeOptions =
+        new() { WriteIndented = false };
 
-    public Course ConvertFile(string path)
+    public static Course ConvertFile(string path)
     {
         if (!File.Exists(path))
             throw new FileNotFoundException($"File not found: {path}");
         return Convert(File.ReadAllText(path, System.Text.Encoding.UTF8));
     }
 
-    public Course Convert(string markdownContent)
+    public static Course Convert(string markdownContent)
     {
         var lines = markdownContent.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
         var dict = ParseScormMd(lines);
 
         // Validate by round-tripping through CourseLoader
-        var json = System.Text.Json.JsonSerializer.Serialize(dict,
-            new System.Text.Json.JsonSerializerOptions { WriteIndented = false });
-        return _loader.Load(json);
+        var json = System.Text.Json.JsonSerializer.Serialize(dict, SerializeOptions);
+        return CourseLoader.Load(json);
     }
 
-    private Dictionary<string, object?> ParseScormMd(string[] lines)
+    private static Dictionary<string, object?> ParseScormMd(string[] lines)
     {
         var (fields, i) = ParseFrontmatter(lines);
 
@@ -81,7 +81,7 @@ public class MarkdownConverter
             if (i < lines.Length)
             {
                 var psm = PassingScoreRx.Match(lines[i]);
-                if (psm.Success) { passingScore = double.Parse(psm.Groups[1].Value); i++; }
+                if (psm.Success) { passingScore = double.Parse(psm.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture); i++; }
             }
 
             var (content, nextI) = ParsePackageContent(lines, i);
@@ -113,7 +113,7 @@ public class MarkdownConverter
 
     // ── Frontmatter ──────────────────────────────────────────────────────────
 
-    private (Dictionary<string, string> fields, int nextIndex) ParseFrontmatter(string[] lines)
+    private static (Dictionary<string, string> fields, int nextIndex) ParseFrontmatter(string[] lines)
     {
         if (lines.Length == 0 || !FrontmatterFence.IsMatch(lines[0]))
             throw new FormatException(
@@ -141,7 +141,7 @@ public class MarkdownConverter
 
     // ── Package content ───────────────────────────────────────────────────────
 
-    private (List<Dictionary<string, object?>> content, int nextIndex) ParsePackageContent(
+    private static (List<Dictionary<string, object?>> content, int nextIndex) ParsePackageContent(
         string[] lines, int start)
     {
         var content = new List<Dictionary<string, object?>>();
@@ -233,7 +233,7 @@ public class MarkdownConverter
 
     // ── Scenario block ────────────────────────────────────────────────────────
 
-    private (Dictionary<string, object?> item, int nextIndex) ParseScenarioBlock(string[] lines, int start)
+    private static (Dictionary<string, object?> item, int nextIndex) ParseScenarioBlock(string[] lines, int start)
     {
         var scenarioName = ScenarioStart.Match(lines[start]).Groups[1].Value.Trim();
         int i = start + 1;
@@ -317,7 +317,7 @@ public class MarkdownConverter
 
     // ── Multiple-choice block ─────────────────────────────────────────────────
 
-    private (Dictionary<string, object?> item, int nextIndex) ParseQuestionBlock(string[] lines, int start)
+    private static (Dictionary<string, object?> item, int nextIndex) ParseQuestionBlock(string[] lines, int start)
     {
         var qm = QuestionRx.Match(lines[start]);
         var questionParts = new List<string> { qm.Groups[1].Value.Trim() };
@@ -382,7 +382,7 @@ public class MarkdownConverter
         }, i);
     }
 
-    private bool IsBlockBoundary(string line) =>
+    private static bool IsBlockBoundary(string line) =>
         PackageHeader.IsMatch(line) ||
         H3.IsMatch(line) ||
         H4.IsMatch(line) ||

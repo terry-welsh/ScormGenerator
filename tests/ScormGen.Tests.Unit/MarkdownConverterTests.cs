@@ -5,7 +5,6 @@ namespace ScormGen.Tests.Unit;
 
 public class MarkdownConverterTests
 {
-    private readonly MarkdownConverter _converter = new();
 
     private const string MinimalCourse = """
         ---
@@ -27,7 +26,7 @@ public class MarkdownConverterTests
     [Fact]
     public void Convert_MinimalCourse_ReturnsCourse()
     {
-        var course = _converter.Convert(MinimalCourse);
+        var course = MarkdownConverter.Convert(MinimalCourse);
 
         Assert.Equal("TEST001", course.CourseId);
         Assert.Equal("Test Course", course.Title);
@@ -39,7 +38,7 @@ public class MarkdownConverterTests
     [Fact]
     public void Convert_InformationalContent_ParsesHeadingParagraphAndList()
     {
-        var course = _converter.Convert(MinimalCourse);
+        var course = MarkdownConverter.Convert(MinimalCourse);
         var content = course.Packages[0].Content;
 
         Assert.Contains(content, i => i is Heading h && h.Level == "h3" && h.Text == "Welcome");
@@ -71,7 +70,7 @@ public class MarkdownConverterTests
             Explanation: The sky appears blue due to Rayleigh scattering.
             """;
 
-        var course = _converter.Convert(md);
+        var course = MarkdownConverter.Convert(md);
         var pkg = course.Packages[0];
 
         Assert.Equal("graded", pkg.ContentType);
@@ -108,7 +107,7 @@ public class MarkdownConverterTests
             Key Insight: Early intervention prevents escalation.
             """;
 
-        var course = _converter.Convert(md);
+        var course = MarkdownConverter.Convert(md);
         var pkg = course.Packages[0];
 
         var scenario = Assert.IsType<Scenario>(pkg.Content[0]);
@@ -121,7 +120,7 @@ public class MarkdownConverterTests
     [Fact]
     public void Convert_MissingFrontmatter_ThrowsFormatException()
     {
-        Assert.Throws<FormatException>(() => _converter.Convert("## Package: test | informational | Title"));
+        Assert.Throws<FormatException>(() => MarkdownConverter.Convert("## Package: test | informational | Title"));
     }
 
     [Fact]
@@ -132,7 +131,7 @@ public class MarkdownConverterTests
             title: No ID Course
             ---
             """;
-        Assert.Throws<FormatException>(() => _converter.Convert(md));
+        Assert.Throws<FormatException>(() => MarkdownConverter.Convert(md));
     }
 
     [Fact]
@@ -143,6 +142,6 @@ public class MarkdownConverterTests
             course_id: X
             title: T
             """;
-        Assert.Throws<FormatException>(() => _converter.Convert(md));
+        Assert.Throws<FormatException>(() => MarkdownConverter.Convert(md));
     }
 }

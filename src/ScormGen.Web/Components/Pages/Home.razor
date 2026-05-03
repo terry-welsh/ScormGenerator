@@ -1,8 +1,6 @@
 @page "/"
 @using Microsoft.Extensions.Caching.Memory
 @inject IJSRuntime JS
-@inject ScormGen.Core.Loading.CourseLoader Loader
-@inject ScormGen.Core.Packaging.ScormPackager Packager
 @inject Microsoft.Extensions.Caching.Memory.IMemoryCache DownloadCache
 
 <PageTitle>SCORM Generator — Upload</PageTitle>
@@ -71,8 +69,8 @@
             await stream.CopyToAsync(ms);
             var json = System.Text.Encoding.UTF8.GetString(ms.ToArray());
 
-            var course = Loader.Load(json);
-            var zipBytes = Packager.PackageCourse(course);
+            var course = ScormGen.Core.Loading.CourseLoader.Load(json);
+            var zipBytes = ScormGen.Core.Packaging.ScormPackager.PackageCourse(course);
 
             var id = Guid.NewGuid().ToString("N");
             DownloadCache.Set($"dl_{id}", zipBytes, TimeSpan.FromMinutes(5));

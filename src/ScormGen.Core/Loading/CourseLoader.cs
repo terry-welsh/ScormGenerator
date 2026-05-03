@@ -15,7 +15,7 @@ public class CourseLoader
         MaxDepth = 32,
     };
 
-    public Course Load(string json)
+    public static Course Load(string json)
     {
         Course course;
         try
@@ -32,7 +32,13 @@ public class CourseLoader
         return course;
     }
 
-    public Course LoadFromFile(string path) => Load(File.ReadAllText(path, System.Text.Encoding.UTF8));
+    public static Course LoadFromFile(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (!File.Exists(fullPath))
+            throw new FileNotFoundException($"Course file not found: {fullPath}", fullPath);
+        return Load(File.ReadAllText(fullPath, System.Text.Encoding.UTF8));
+    }
 
     private static void Validate(Course course)
     {

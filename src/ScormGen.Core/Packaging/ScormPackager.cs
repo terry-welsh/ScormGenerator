@@ -8,7 +8,7 @@ namespace ScormGen.Core.Packaging;
 
 public class ScormPackager
 {
-    public byte[] PackageCourse(Course course)
+    public static byte[] PackageCourse(Course course)
     {
         var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(tempDir);
@@ -100,10 +100,10 @@ public class ScormPackager
 
         var optionsHtml = string.Concat(scenario.Options.Select(opt => $"""
 
-            <div class="scenario-option" data-option="{opt.Letter}" onclick="selectOption('{opt.Letter}')">
-                <h4>Option {Escape(opt.Letter)}</h4>
-                <p>{Escape(opt.Text)}</p>
-            </div>
+            <button type="button" class="scenario-option" data-option="{opt.Letter}" onclick="selectOption('{opt.Letter}')">
+                <span class="scenario-option-heading">Option {Escape(opt.Letter)}</span>
+                <span class="scenario-option-body">{Escape(opt.Text)}</span>
+            </button>
 """));
 
         var analysisHtml = string.Concat(scenario.Options.Select(opt =>
@@ -120,7 +120,7 @@ public class ScormPackager
             : string.Empty;
 
         return HtmlTemplates.GetScenarioHtml(
-            title: $"Scenario: {Escape(scenario.Name)}",
+            title: $"Scenario: {scenario.Name}",
             situation: ParagraphsToHtml(scenario.Situation),
             optionsHtml: optionsHtml,
             analysisHtml: analysisHtml,
@@ -191,12 +191,12 @@ public class ScormPackager
 """;
             }));
 
-            sb.Append($"""
+            sb.Append(System.Globalization.CultureInfo.InvariantCulture, $"""
 
             <div class="question-container" id="question-{num}">
                 <span class="question-number">{num}</span>
-                <span class="question-text">{Escape(q.Question)}</span>
-                <ul class="options-list">
+                <span class="question-text" id="question-label-{num}">{Escape(q.Question)}</span>
+                <ul class="options-list" role="radiogroup" aria-labelledby="question-label-{num}">
                     {optionsHtml}
                 </ul>
 """);
@@ -209,11 +209,9 @@ public class ScormPackager
                 var feedbackIncorrect =
                     $"Not quite. The correct answer is {q.CorrectAnswer}. {Escape(q.Explanation)}";
 
-                sb.Append($"""
+                sb.Append(System.Globalization.CultureInfo.InvariantCulture, $"""
 
-                <div class="feedback correct" id="feedback-{num}-correct">{feedbackCorrect}</div>
-                <div class="feedback incorrect" id="feedback-{num}-incorrect">{feedbackIncorrect}</div>
-                <div class="feedback" id="feedback-{num}">
+                <div class="feedback" id="feedback-{num}" aria-live="polite">
                     <p id="feedback-text-{num}"></p>
                     <p class="explanation">{Escape(q.Explanation)}</p>
                 </div>

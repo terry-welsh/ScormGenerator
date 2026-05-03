@@ -6,8 +6,6 @@ namespace ScormGen.Tests.Unit;
 
 public class PackagingTests
 {
-    private readonly CourseLoader _loader = new();
-    private readonly ScormPackager _packager = new();
 
     private static string SampleJson =>
         File.ReadAllText(Path.Combine("..", "..", "..", "..", "..", "templates", "sample_course.json"));
@@ -15,8 +13,8 @@ public class PackagingTests
     [Fact]
     public void PackageCourse_ProducesOuterZipWith4Entries()
     {
-        var course = _loader.Load(SampleJson);
-        var bytes = _packager.PackageCourse(course);
+        var course = CourseLoader.Load(SampleJson);
+        var bytes = ScormPackager.PackageCourse(course);
 
         using var outer = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
         Assert.Equal(4, outer.Entries.Count);
@@ -26,8 +24,8 @@ public class PackagingTests
     [Fact]
     public void PackageCourse_EachInnerZipHasRequiredFiles()
     {
-        var course = _loader.Load(SampleJson);
-        var bytes = _packager.PackageCourse(course);
+        var course = CourseLoader.Load(SampleJson);
+        var bytes = ScormPackager.PackageCourse(course);
 
         using var outer = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
         foreach (var outerEntry in outer.Entries)
@@ -47,8 +45,8 @@ public class PackagingTests
     [Fact]
     public void PackageCourse_ManifestContainsScorm2004SchemaVersion()
     {
-        var course = _loader.Load(SampleJson);
-        var bytes = _packager.PackageCourse(course);
+        var course = CourseLoader.Load(SampleJson);
+        var bytes = ScormPackager.PackageCourse(course);
 
         using var outer = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
         var firstEntry = outer.Entries[0];

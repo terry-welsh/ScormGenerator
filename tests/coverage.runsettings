@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Threshold>60</Threshold>
+          <ThresholdType>Line</ThresholdType>
+          <ThresholdStat>Minimum</ThresholdStat>
+          <!-- Exclude auto-generated Blazor and migration code -->
+          <Exclude>[*.Tests.*]*,[*]*.obj.*</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

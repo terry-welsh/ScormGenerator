@@ -4,6 +4,7 @@
     <Project Path="src/ScormGen.Web/ScormGen.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/ScormGen.Tests.Components/ScormGen.Tests.Components.csproj" />
     <Project Path="tests/ScormGen.Tests.Integration/ScormGen.Tests.Integration.csproj" />
     <Project Path="tests/ScormGen.Tests.Unit/ScormGen.Tests.Unit.csproj" />
   </Folder>

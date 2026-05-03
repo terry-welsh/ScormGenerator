@@ -439,10 +439,18 @@ window.addEventListener('beforeunload', function() {
         }
 
         .option-item input[type="radio"] {
-            opacity: 0;
             position: absolute;
-            width: 0;
-            height: 0;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+        }
+
+        .option-item input[type="radio"]:focus-visible + .option-label {
+            outline: 3px solid {{Primary}};
+            outline-offset: 2px;
         }
 
         .option-item input[type="radio"]:checked + .option-label,
@@ -603,9 +611,25 @@ window.addEventListener('beforeunload', function() {
             background: {{SuccessBg}};
         }
 
-        .scenario-option h4 {
+        .scenario-option h4,
+        .scenario-option-heading {
+            display: block;
             margin: 0 0 10px 0;
             color: {{Accent}};
+            font-weight: bold;
+        }
+
+        .scenario-option-body {
+            display: block;
+        }
+
+        button.scenario-option {
+            display: block;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+            font-size: 1em;
+            line-height: 1.6;
         }
 
         .analysis-section {
@@ -638,15 +662,24 @@ window.addEventListener('beforeunload', function() {
     """;
 
     // =========================================================================
+    // Encoding helpers
+    // =========================================================================
+
+    private static string H(string text) => System.Net.WebUtility.HtmlEncode(text);
+    private static string X(string text) => System.Security.SecurityElement.Escape(text) ?? string.Empty;
+
+    // =========================================================================
     // imsmanifest.xml
     // =========================================================================
 
     public static string GetManifest(string identifier, string title, string contentType, double passingScore)
     {
         var sequencing = GetSequencingRules(contentType, passingScore);
+        var sid = X(identifier);
+        var st = X(title);
         return $$"""
 <?xml version="1.0" encoding="UTF-8"?>
-<manifest identifier="{{identifier}}" version="1.0"
+<manifest identifier="{{sid}}" version="1.0"
     xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
     xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_v1p3"
     xmlns:adlseq="http://www.adlnet.org/xsd/adlseq_v1p3"
@@ -664,18 +697,18 @@ window.addEventListener('beforeunload', function() {
         <schemaversion>2004 3rd Edition</schemaversion>
     </metadata>
 
-    <organizations default="ORG-{{identifier}}">
-        <organization identifier="ORG-{{identifier}}" structure="hierarchical">
-            <title>{{title}}</title>
-            <item identifier="ITEM-{{identifier}}" identifierref="RES-{{identifier}}">
-                <title>{{title}}</title>
+    <organizations default="ORG-{{sid}}">
+        <organization identifier="ORG-{{sid}}" structure="hierarchical">
+            <title>{{st}}</title>
+            <item identifier="ITEM-{{sid}}" identifierref="RES-{{sid}}">
+                <title>{{st}}</title>
                 {{sequencing}}
             </item>
         </organization>
     </organizations>
 
     <resources>
-        <resource identifier="RES-{{identifier}}" type="webcontent" adlcp:scormType="sco" href="index.html">
+        <resource identifier="RES-{{sid}}" type="webcontent" adlcp:scormType="sco" href="index.html">
             <file href="index.html"/>
             <file href="scorm_api.js"/>
         </resource>
@@ -714,23 +747,23 @@ window.addEventListener('beforeunload', function() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{title}}</title>
+    <title>{{H(title)}}</title>
     {{BaseStyles}}
     <script>{{ScormApiJs}}</script>
 </head>
 <body>
-    <div class="content-wrapper">
-        <h1>{{title}}</h1>
-        <div class="progress-bar">
+    <main class="content-wrapper">
+        <h1>{{H(title)}}</h1>
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Course progress" id="progressBar">
             <div class="progress-fill" id="progressFill" style="width: 0%"></div>
         </div>
         <div id="content">
             {{contentHtml}}
         </div>
-        <div class="completion-marker" id="completionMarker">
+        <div class="completion-marker" id="completionMarker" role="status" aria-live="polite">
             ✓ Content Completed
         </div>
-    </div>
+    </main>
 
     <script>
         (function() {
@@ -742,7 +775,9 @@ window.addEventListener('beforeunload', function() {
                 var scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
                 var progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 100;
 
-                document.getElementById('progressFill').style.width = Math.min(progress, 100) + '%';
+                var pct = Math.min(progress, 100);
+                document.getElementById('progressFill').style.width = pct + '%';
+                document.getElementById('progressBar').setAttribute('aria-valuenow', Math.round(pct));
 
                 if (progress >= scrollThreshold * 100 && !completed) {
                     markComplete();
@@ -785,30 +820,30 @@ window.addEventListener('beforeunload', function() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{title}}</title>
+    <title>{{H(title)}}</title>
     {{BaseStyles}}
     <script>{{ScormApiJs}}</script>
 </head>
 <body>
-    <div class="content-wrapper">
-        <h1>{{title}}</h1>
+    <main class="content-wrapper">
+        <h1>{{H(title)}}</h1>
 
         <div class="scenario-situation">
             <h3>Situation</h3>
             {{situation}}
         </div>
 
-        <div class="scenario-options" id="optionsContainer">
-            <h3>What would you do?</h3>
+        <div class="scenario-options" id="optionsContainer" role="group" aria-labelledby="options-heading">
+            <h3 id="options-heading">What would you do?</h3>
             {{optionsHtml}}
         </div>
 
-        <div class="analysis-section" id="analysisSection">
+        <div class="analysis-section" id="analysisSection" aria-live="polite" tabindex="-1">
             <h3>Analysis</h3>
             <div id="analysisContent">{{analysisHtml}}</div>
             {{additionalHtml}}
         </div>
-    </div>
+    </main>
 
     <script>
         (function() {
@@ -830,13 +865,14 @@ window.addEventListener('beforeunload', function() {
                     if (correctOption && opt.dataset.option === correctOption) {
                         opt.classList.add('correct-highlight');
                     }
+                    opt.disabled = true;
                 });
 
-                // Show analysis
-                document.getElementById('analysisSection').style.display = 'block';
-
-                // Scroll to analysis
-                document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth' });
+                // Show analysis and move focus for screen readers
+                var analysis = document.getElementById('analysisSection');
+                analysis.style.display = 'block';
+                analysis.scrollIntoView({ behavior: 'smooth' });
+                analysis.focus();
 
                 // Mark complete (ungraded - no score)
                 SCORM.setCompletionStatus('completed');
@@ -854,16 +890,16 @@ window.addEventListener('beforeunload', function() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{title}}</title>
+    <title>{{H(title)}}</title>
     {{BaseStyles}}
     <script>{{ScormApiJs}}</script>
 </head>
 <body>
-    <div class="content-wrapper">
-        <h1>{{title}}</h1>
+    <main class="content-wrapper">
+        <h1>{{H(title)}}</h1>
         <p>This is a knowledge check to help reinforce your learning. Your answers are not scored.</p>
 
-        <div class="progress-bar">
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Questions answered" id="progressBar">
             <div class="progress-fill" id="progressFill" style="width: 0%"></div>
         </div>
 
@@ -871,10 +907,10 @@ window.addEventListener('beforeunload', function() {
             {{questionsHtml}}
         </div>
 
-        <div class="completion-marker" id="completionMarker">
+        <div class="completion-marker" id="completionMarker" role="status" aria-live="polite">
             ✓ Knowledge Check Completed
         </div>
-    </div>
+    </main>
 
     <script>
         (function() {
@@ -905,8 +941,9 @@ window.addEventListener('beforeunload', function() {
                 });
 
                 // Update progress
-                var progress = (answeredQuestions.size / totalQuestions) * 100;
-                document.getElementById('progressFill').style.width = progress + '%';
+                var pct = (answeredQuestions.size / totalQuestions) * 100;
+                document.getElementById('progressFill').style.width = pct + '%';
+                document.getElementById('progressBar').setAttribute('aria-valuenow', Math.round(pct));
 
                 // Check if all questions answered
                 if (answeredQuestions.size >= totalQuestions) {
@@ -935,16 +972,16 @@ window.addEventListener('beforeunload', function() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{title}}</title>
+    <title>{{H(title)}}</title>
     {{BaseStyles}}
     <script>{{ScormApiJs}}</script>
 </head>
 <body>
-    <div class="content-wrapper">
-        <h1>{{title}}</h1>
+    <main class="content-wrapper">
+        <h1>{{H(title)}}</h1>
         <p><strong>Passing Score:</strong> {{passingPercent}}% ({{minCorrect}}/{{questionCount}} correct answers required)</p>
 
-        <div class="progress-bar">
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Questions answered" id="progressBar">
             <div class="progress-fill" id="progressFill" style="width: 0%"></div>
         </div>
 
@@ -960,13 +997,13 @@ window.addEventListener('beforeunload', function() {
             </div>
         </form>
 
-        <div class="results-container" id="resultsContainer" style="display: none;">
+        <div class="results-container" id="resultsContainer" style="display: none;" role="status" aria-live="polite" tabindex="-1">
             <h2>Assessment Results</h2>
             <div class="score-display" id="scoreDisplay"></div>
             <p class="results-message" id="resultsMessage"></p>
             <div id="reviewContainer"></div>
         </div>
-    </div>
+    </main>
 
     <script>
         (function() {
@@ -1014,9 +1051,11 @@ window.addEventListener('beforeunload', function() {
                 SCORM.setSuccessStatus(passed ? 'passed' : 'failed');
                 SCORM.commit();
 
-                // Display results
+                // Display results and move focus for screen readers
                 document.getElementById('quizForm').style.display = 'none';
-                document.getElementById('resultsContainer').style.display = 'block';
+                var results = document.getElementById('resultsContainer');
+                results.style.display = 'block';
+                results.focus();
 
                 var scoreDisplay = document.getElementById('scoreDisplay');
                 scoreDisplay.textContent = percent + '%';
@@ -1051,8 +1090,9 @@ window.addEventListener('beforeunload', function() {
                     document.querySelectorAll('input[type="radio"]:checked').forEach(function(checked) {
                         uniqueAnswered.add(checked.name);
                     });
-                    var progress = (uniqueAnswered.size / totalQuestions) * 100;
-                    document.getElementById('progressFill').style.width = progress + '%';
+                    var pct = (uniqueAnswered.size / totalQuestions) * 100;
+                    document.getElementById('progressFill').style.width = pct + '%';
+                    document.getElementById('progressBar').setAttribute('aria-valuenow', Math.round(pct));
                 });
             });
         })();

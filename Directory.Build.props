@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <!-- Fail the build on any warning in non-test projects -->
+    <TreatWarningsAsErrors Condition="'$(IsPackable)' != 'false'">true</TreatWarningsAsErrors>
+    <!-- Enable latest-recommended Roslyn analyzers -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- CA2007 (ConfigureAwait) is not required in web applications -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <!-- CA1707 (underscores in identifiers): test method names intentionally use underscores -->
+    <!-- CA1848 (LoggerMessage delegates): not warranted for low-frequency error logging -->
+    <NoWarn>$(NoWarn);CA1707;CA1848</NoWarn>
+  </PropertyGroup>
+</Project>

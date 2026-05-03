@@ -11,8 +11,6 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddMemoryCache();
-builder.Services.AddSingleton<CourseLoader>();
-builder.Services.AddSingleton<ScormPackager>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -22,6 +20,16 @@ builder.Services.AddRateLimiter(options =>
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            }));
+    options.AddPolicy("download", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
                 Window = TimeSpan.FromMinutes(1),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0,
@@ -45,6 +53,9 @@ app.Use(async (context, next) =>
     context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
     context.Response.Headers.Append("X-Frame-Options", "SAMEORIGIN");
     context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
+        "connect-src 'self' wss: ws:; img-src 'self' data:; font-src 'self'; frame-ancestors 'self';");
     await next();
 });
 
@@ -54,7 +65,7 @@ app.UseRateLimiter();
 app.UseAntiforgery();
 app.MapStaticAssets();
 
-app.MapPost("/generate", async (HttpContext ctx, CourseLoader loader, ScormPackager packager, ILogger<Program> logger) =>
+app.MapPost("/generate", async (HttpContext ctx, ILogger<Program> logger) =>
 {
     var request = ctx.Request;
     if (!request.HasFormContentType)
@@ -69,10 +80,10 @@ app.MapPost("/generate", async (HttpContext ctx, CourseLoader loader, ScormPacka
     {
         using var reader = new StreamReader(file.OpenReadStream());
         var json = await reader.ReadToEndAsync();
-        var course = loader.Load(json);
-        var zipBytes = packager.PackageCourse(course);
+        var course = CourseLoader.Load(json);
+        var zipBytes = ScormPackager.PackageCourse(course);
 
-        ctx.Response.Headers["X-Package-Count"] = course.Packages.Count.ToString();
+        ctx.Response.Headers["X-Package-Count"] = course.Packages.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return Results.File(zipBytes, "application/zip", "scorm_packages.zip");
     }
     catch (ArgumentException ex)
@@ -94,7 +105,7 @@ app.MapGet("/download/{id}", (string id, IMemoryCache cache) =>
         return Results.NotFound();
     cache.Remove($"dl_{id}");
     return Results.File(bytes, "application/zip", "scorm_packages.zip");
-});
+}).RequireRateLimiting("download");
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
