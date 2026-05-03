@@ -6,5 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\Resources\scorm-api.js" />
+    <EmbeddedResource Include="Templates\Resources\base-styles.css" />
+  </ItemGroup>
 
 </Project>

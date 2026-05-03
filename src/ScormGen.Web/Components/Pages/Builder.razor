@@ -1,6 +1,9 @@
 @page "/builder"
+@namespace ScormGen.Web.Components.Pages
 @using Microsoft.Extensions.Caching.Memory
 @using System.Text.Json.Nodes
+@using ScormGen.Core
+@using ScormGen.Web.Components.Pages.BuilderComponents
 @inject IMemoryCache DownloadCache
 @inject IJSRuntime JS
 
@@ -15,230 +18,26 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Course ID</label>
-                <input @bind="_courseId" placeholder="COURSE_001" class="@InputCls" />
+                <input @bind="_courseId" placeholder="COURSE_001" class="@BuilderStyles.Input" />
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Version</label>
-                <input @bind="_version" placeholder="1.0" class="@InputCls" />
+                <input @bind="_version" placeholder="1.0" class="@BuilderStyles.Input" />
             </div>
             <div class="sm:col-span-2">
                 <label class="block text-xs font-medium text-gray-600 mb-1">Course Title</label>
-                <input @bind="_courseTitle" placeholder="e.g. Introduction to Safety" class="@InputCls" />
+                <input @bind="_courseTitle" placeholder="e.g. Introduction to Safety" class="@BuilderStyles.Input" />
             </div>
         </div>
     </div>
 
     @for (int pi = 0; pi < _packages.Count; pi++)
     {
-        var pkg = _packages[pi];
         var pkgIdx = pi;
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
-            <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer select-none"
-                 @onclick="() => pkg.Expanded = !pkg.Expanded">
-                <span class="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center flex-shrink-0">@(pkgIdx + 1)</span>
-                <span class="flex-1 font-medium text-sm text-gray-800 truncate">
-                    @(string.IsNullOrWhiteSpace(pkg.Title) ? "(untitled package)" : pkg.Title)
-                </span>
-                <span class="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded-full">@pkg.ContentType</span>
-                <button @onclick:stopPropagation="true" @onclick="() => RemovePackage(pkgIdx)"
-                        class="text-xs text-gray-400 hover:text-danger transition-colors">Remove</button>
-                <span class="text-gray-300 text-xs ml-1">@(pkg.Expanded ? "▲" : "▼")</span>
-            </div>
-
-            @if (pkg.Expanded)
-            {
-                <div class="p-4 space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">File Name (no spaces)</label>
-                            <input @bind="pkg.FileName" placeholder="PKG1_INTRO" class="@InputCls" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Content Type</label>
-                            <select @bind="pkg.ContentType" @bind:after="() => pkg.Content.Clear()" class="@InputCls">
-                                <option value="informational">Informational</option>
-                                <option value="ungraded">Ungraded (Quiz / Scenario)</option>
-                                <option value="graded">Graded Assessment</option>
-                            </select>
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Package Title</label>
-                            <input @bind="pkg.Title" placeholder="Module 1: Introduction" class="@InputCls" />
-                        </div>
-                        @if (pkg.ContentType == "graded")
-                        {
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Passing Score (%)</label>
-                                <input @bind="pkg.PassingScorePercent" type="number" min="0" max="100" class="@InputCls" />
-                            </div>
-                        }
-                    </div>
-
-                    @if (pkg.Content.Count > 0)
-                    {
-                        <div class="space-y-3">
-                            @for (int ci = 0; ci < pkg.Content.Count; ci++)
-                            {
-                                var item = pkg.Content[ci];
-                                var cIdx = ci;
-                                <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                                    <div class="flex justify-between items-center mb-3">
-                                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">@item.TypeLabel</span>
-                                        <button @onclick="() => RemoveContent(pkgIdx, cIdx)"
-                                                class="text-xs text-gray-400 hover:text-danger transition-colors">Remove</button>
-                                    </div>
-
-                                    @if (item is BHeading heading)
-                                    {
-                                        <div class="grid grid-cols-4 gap-2">
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Level</label>
-                                                <select @bind="heading.Level" class="@InputCls">
-                                                    <option>h1</option><option>h2</option><option>h3</option><option>h4</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-span-3">
-                                                <label class="block text-xs text-gray-500 mb-1">Text</label>
-                                                <input @bind="heading.Text" placeholder="Heading text" class="@InputCls" />
-                                            </div>
-                                        </div>
-                                    }
-                                    else if (item is BParagraph paragraph)
-                                    {
-                                        <label class="block text-xs text-gray-500 mb-1">Text</label>
-                                        <textarea @bind="paragraph.Text" placeholder="Paragraph text…" rows="3" class="@TextareaCls"></textarea>
-                                    }
-                                    else if (item is BBulletedList bulletList)
-                                    {
-                                        <label class="block text-xs text-gray-500 mb-1">Items (one per line)</label>
-                                        <textarea @bind="bulletList.RawText" placeholder="First item&#10;Second item&#10;Third item" rows="4" class="@TextareaCls"></textarea>
-                                    }
-                                    else if (item is BMultipleChoice mc)
-                                    {
-                                        <div class="space-y-2">
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Question</label>
-                                                <textarea @bind="mc.Question" placeholder="Question text…" rows="2" class="@TextareaCls"></textarea>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Answer Options</label>
-                                                @for (int oi = 0; oi < mc.Options.Count; oi++)
-                                                {
-                                                    var opt = mc.Options[oi];
-                                                    var optLetter = ((char)('A' + oi)).ToString();
-                                                    var optIdx = oi;
-                                                    <div class="flex items-center gap-2 mb-1.5">
-                                                        <span class="text-xs font-bold text-gray-400 w-4 flex-shrink-0">@optLetter</span>
-                                                        <input @bind="opt.Text" placeholder="Option @optLetter"
-                                                               class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50" />
-                                                        @if (mc.Options.Count > 2)
-                                                        {
-                                                            <button @onclick="() => mc.Options.RemoveAt(optIdx)"
-                                                                    class="text-gray-300 hover:text-danger text-lg leading-none">×</button>
-                                                        }
-                                                    </div>
-                                                }
-                                                <button @onclick="() => mc.Options.Add(new BMcOption())"
-                                                        class="text-xs text-primary hover:underline mt-1">+ Add option</button>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Correct Answer</label>
-                                                <select @bind="mc.CorrectAnswer" class="@InputCls">
-                                                    <option value="">— select correct answer —</option>
-                                                    @for (int oi = 0; oi < mc.Options.Count; oi++)
-                                                    {
-                                                        var letter = ((char)('A' + oi)).ToString();
-                                                        <option value="@letter">@letter</option>
-                                                    }
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Explanation</label>
-                                                <textarea @bind="mc.Explanation" placeholder="Explain the correct answer…" rows="2" class="@TextareaCls"></textarea>
-                                            </div>
-                                        </div>
-                                    }
-                                    else if (item is BScenario scenario)
-                                    {
-                                        <div class="space-y-2">
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Scenario Name</label>
-                                                <input @bind="scenario.Name" placeholder="e.g. The Difficult Conversation" class="@InputCls" />
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Situation</label>
-                                                <textarea @bind="scenario.Situation" placeholder="Describe the situation the learner faces…" rows="4" class="@TextareaCls"></textarea>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Options</label>
-                                                @for (int oi = 0; oi < scenario.Options.Count; oi++)
-                                                {
-                                                    var sOpt = scenario.Options[oi];
-                                                    var optLetter = ((char)('A' + oi)).ToString();
-                                                    var optIdx = oi;
-                                                    <div class="border border-gray-200 rounded-lg p-3 mb-2 bg-white">
-                                                        <div class="flex justify-between items-center mb-2">
-                                                            <span class="text-xs font-bold text-gray-500">Option @optLetter</span>
-                                                            @if (scenario.Options.Count > 2)
-                                                            {
-                                                                <button @onclick="() => scenario.Options.RemoveAt(optIdx)"
-                                                                        class="text-xs text-gray-400 hover:text-danger">Remove</button>
-                                                            }
-                                                        </div>
-                                                        <input @bind="sOpt.Text" placeholder="Option @optLetter description"
-                                                               class="@InputCls mb-1.5" />
-                                                        <textarea @bind="sOpt.Analysis" placeholder="Analysis / feedback for this option…" rows="2" class="@TextareaCls"></textarea>
-                                                    </div>
-                                                }
-                                                <button @onclick="() => scenario.Options.Add(new BScenarioOption())"
-                                                        class="text-xs text-primary hover:underline">+ Add option</button>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Correct Option</label>
-                                                <select @bind="scenario.CorrectOption" class="@InputCls">
-                                                    <option value="">— select best option —</option>
-                                                    @for (int oi = 0; oi < scenario.Options.Count; oi++)
-                                                    {
-                                                        var letter = ((char)('A' + oi)).ToString();
-                                                        <option value="@letter">Option @letter</option>
-                                                    }
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Key Insight (optional)</label>
-                                                <textarea @bind="scenario.KeyInsight" placeholder="Key takeaway from this scenario…" rows="2" class="@TextareaCls"></textarea>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                    }
-
-                    <div class="flex flex-wrap gap-2 pt-1">
-                        @if (pkg.ContentType == "informational")
-                        {
-                            <button @onclick="() => AddContent(pkgIdx, new BHeading())" class="@AddBtnCls">+ Heading</button>
-                            <button @onclick="() => AddContent(pkgIdx, new BParagraph())" class="@AddBtnCls">+ Paragraph</button>
-                            <button @onclick="() => AddContent(pkgIdx, new BBulletedList())" class="@AddBtnCls">+ Bullet List</button>
-                        }
-                        else if (pkg.ContentType == "ungraded")
-                        {
-                            <button @onclick="() => AddContent(pkgIdx, new BMultipleChoice())" class="@AddBtnCls">+ Question</button>
-                            @if (!pkg.Content.OfType<BScenario>().Any())
-                            {
-                                <button @onclick="() => AddContent(pkgIdx, new BScenario())" class="@AddBtnCls">+ Scenario</button>
-                            }
-                        }
-                        else if (pkg.ContentType == "graded")
-                        {
-                            <button @onclick="() => AddContent(pkgIdx, new BMultipleChoice())" class="@AddBtnCls">+ Question</button>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
+        <PackageCard Package="_packages[pi]" Index="@pi"
+                     OnRemove="@(() => RemovePackage(pkgIdx))"
+                     OnAddContent="@((item) => AddContent(pkgIdx, item))"
+                     OnRemoveContent="@((ci) => RemoveContent(pkgIdx, ci))" />
     }
 
     <button @onclick="AddPackage"
@@ -278,10 +77,6 @@
     private bool _generating;
     private bool _downloadReady;
     private string? _error;
-
-    private const string InputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50";
-    private const string TextareaCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/50";
-    private const string AddBtnCls = "text-xs px-3 py-1.5 text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors";
 
     private void AddPackage() => _packages.Add(new BPackage());
     private void RemovePackage(int i) => _packages.RemoveAt(i);
@@ -332,125 +127,61 @@
 
             var pkg = new JsonObject
             {
-                ["file_number"] = i + 1,
-                ["file_name"] = p.FileName,
-                ["content_type"] = p.ContentType,
-                ["title"] = p.Title,
-                ["content"] = contentArray
+                [JsonKeys.FileNumber]  = i + 1,
+                [JsonKeys.FileName]    = p.FileName,
+                [JsonKeys.ContentType] = p.ContentType,
+                [JsonKeys.Title]       = p.Title,
+                [JsonKeys.Content]     = contentArray
             };
             if (p.ContentType == "graded")
-                pkg["passing_score"] = p.PassingScore;
+                pkg[JsonKeys.PassingScore] = p.PassingScore;
             pkgsArray.Add(pkg);
         }
 
         return new JsonObject
         {
-            ["course_id"] = _courseId,
-            ["title"] = _courseTitle,
-            ["version"] = _version,
-            ["packages"] = pkgsArray
+            [JsonKeys.CourseId] = _courseId,
+            [JsonKeys.Title]    = _courseTitle,
+            [JsonKeys.Version]  = _version,
+            [JsonKeys.Packages] = pkgsArray
         }.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
     }
 
     private static JsonNode SerializeItem(BContentItem item) => item switch
     {
-        BHeading h => new JsonObject { ["type"] = "heading", ["level"] = h.Level, ["text"] = h.Text },
-        BParagraph p => new JsonObject { ["type"] = "paragraph", ["text"] = p.Text },
+        BHeading h       => new JsonObject { [JsonKeys.Type] = JsonKeys.TypeHeading, [JsonKeys.Level] = h.Level, [JsonKeys.Text] = h.Text },
+        BParagraph p     => new JsonObject { [JsonKeys.Type] = JsonKeys.TypeParagraph, [JsonKeys.Text] = p.Text },
         BBulletedList bl => new JsonObject
         {
-            ["type"] = "bulleted_list",
-            ["items"] = new JsonArray(bl.Items.Select(s => (JsonNode)JsonValue.Create(s)!).ToArray())
+            [JsonKeys.Type]  = JsonKeys.TypeBulletedList,
+            [JsonKeys.Items] = new JsonArray(bl.Items.Select(s => (JsonNode)JsonValue.Create(s)!).ToArray())
         },
         BMultipleChoice mc => new JsonObject
         {
-            ["type"] = "multiple_choice",
-            ["question"] = mc.Question,
-            ["options"] = new JsonArray(mc.Options.Select((o, idx) => (JsonNode)new JsonObject
+            [JsonKeys.Type]          = JsonKeys.TypeMultipleChoice,
+            [JsonKeys.Question]      = mc.Question,
+            [JsonKeys.Options]       = new JsonArray(mc.Options.Select((o, idx) => (JsonNode)new JsonObject
             {
-                ["letter"] = ((char)('A' + idx)).ToString(),
-                ["text"] = o.Text
+                [JsonKeys.Letter] = ((char)('A' + idx)).ToString(),
+                [JsonKeys.Text]   = o.Text
             }).ToArray()),
-            ["correct_answer"] = mc.CorrectAnswer,
-            ["explanation"] = mc.Explanation
+            [JsonKeys.CorrectAnswer] = mc.CorrectAnswer,
+            [JsonKeys.Explanation]   = mc.Explanation
         },
         BScenario sc => new JsonObject
         {
-            ["type"] = "scenario",
-            ["name"] = sc.Name,
-            ["situation"] = sc.Situation,
-            ["options"] = new JsonArray(sc.Options.Select((o, idx) => (JsonNode)new JsonObject
+            [JsonKeys.Type]          = JsonKeys.TypeScenario,
+            [JsonKeys.Name]          = sc.Name,
+            [JsonKeys.Situation]     = sc.Situation,
+            [JsonKeys.Options]       = new JsonArray(sc.Options.Select((o, idx) => (JsonNode)new JsonObject
             {
-                ["letter"] = ((char)('A' + idx)).ToString(),
-                ["text"] = o.Text,
-                ["analysis"] = o.Analysis
+                [JsonKeys.Letter]   = ((char)('A' + idx)).ToString(),
+                [JsonKeys.Text]     = o.Text,
+                [JsonKeys.Analysis] = o.Analysis
             }).ToArray()),
-            ["correct_option"] = sc.CorrectOption,
-            ["key_insight"] = sc.KeyInsight
+            [JsonKeys.CorrectOption] = sc.CorrectOption,
+            [JsonKeys.KeyInsight]    = sc.KeyInsight
         },
         _ => throw new InvalidOperationException($"Unknown type: {item.GetType().Name}")
     };
-
-    // ── Model classes ──────────────────────────────────────────────────────────
-
-    private sealed class BPackage
-    {
-        public string FileName { get; set; } = "";
-        public string Title { get; set; } = "";
-        public string ContentType { get; set; } = "informational";
-        public int PassingScorePercent { get; set; } = 80;
-        public double PassingScore => PassingScorePercent / 100.0;
-        public List<BContentItem> Content { get; } = new();
-        public bool Expanded { get; set; } = true;
-    }
-
-    private abstract class BContentItem { public abstract string TypeLabel { get; } }
-
-    private sealed class BHeading : BContentItem
-    {
-        public override string TypeLabel => "Heading";
-        public string Level { get; set; } = "h2";
-        public string Text { get; set; } = "";
-    }
-
-    private sealed class BParagraph : BContentItem
-    {
-        public override string TypeLabel => "Paragraph";
-        public string Text { get; set; } = "";
-    }
-
-    private sealed class BBulletedList : BContentItem
-    {
-        public override string TypeLabel => "Bulleted List";
-        public string RawText { get; set; } = "";
-        public List<string> Items =>
-            RawText.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                   .Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
-    }
-
-    private sealed class BMultipleChoice : BContentItem
-    {
-        public override string TypeLabel => "Multiple Choice";
-        public string Question { get; set; } = "";
-        public List<BMcOption> Options { get; } = new() { new(), new(), new(), new() };
-        public string CorrectAnswer { get; set; } = "";
-        public string Explanation { get; set; } = "";
-    }
-
-    private sealed class BMcOption { public string Text { get; set; } = ""; }
-
-    private sealed class BScenario : BContentItem
-    {
-        public override string TypeLabel => "Scenario";
-        public string Name { get; set; } = "";
-        public string Situation { get; set; } = "";
-        public List<BScenarioOption> Options { get; } = new() { new(), new() };
-        public string CorrectOption { get; set; } = "";
-        public string KeyInsight { get; set; } = "";
-    }
-
-    private sealed class BScenarioOption
-    {
-        public string Text { get; set; } = "";
-        public string Analysis { get; set; } = "";
-    }
 }

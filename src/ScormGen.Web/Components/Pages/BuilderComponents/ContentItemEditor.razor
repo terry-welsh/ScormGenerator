@@ -1,0 +1,136 @@
+@namespace ScormGen.Web.Components.Pages.BuilderComponents
+
+<div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
+    <div class="flex justify-between items-center mb-3">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">@Item.TypeLabel</span>
+        <button @onclick="OnRemove" class="text-xs text-gray-400 hover:text-danger transition-colors">Remove</button>
+    </div>
+
+    @if (Item is BHeading heading)
+    {
+        <div class="grid grid-cols-4 gap-2">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Level</label>
+                <select @bind="heading.Level" class="@BuilderStyles.Input">
+                    <option>h1</option><option>h2</option><option>h3</option><option>h4</option>
+                </select>
+            </div>
+            <div class="col-span-3">
+                <label class="block text-xs text-gray-500 mb-1">Text</label>
+                <input @bind="heading.Text" placeholder="Heading text" class="@BuilderStyles.Input" />
+            </div>
+        </div>
+    }
+    else if (Item is BParagraph paragraph)
+    {
+        <label class="block text-xs text-gray-500 mb-1">Text</label>
+        <textarea @bind="paragraph.Text" placeholder="Paragraph text…" rows="3" class="@BuilderStyles.Textarea"></textarea>
+    }
+    else if (Item is BBulletedList bulletList)
+    {
+        <label class="block text-xs text-gray-500 mb-1">Items (one per line)</label>
+        <textarea @bind="bulletList.RawText" placeholder="First item&#10;Second item&#10;Third item" rows="4" class="@BuilderStyles.Textarea"></textarea>
+    }
+    else if (Item is BMultipleChoice mc)
+    {
+        <div class="space-y-2">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Question</label>
+                <textarea @bind="mc.Question" placeholder="Question text…" rows="2" class="@BuilderStyles.Textarea"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Answer Options</label>
+                @for (int oi = 0; oi < mc.Options.Count; oi++)
+                {
+                    var opt = mc.Options[oi];
+                    var optLetter = ((char)('A' + oi)).ToString();
+                    var optIdx = oi;
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="text-xs font-bold text-gray-400 w-4 flex-shrink-0">@optLetter</span>
+                        <input @bind="opt.Text" placeholder="Option @optLetter"
+                               class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                        @if (mc.Options.Count > 2)
+                        {
+                            <button @onclick="() => mc.Options.RemoveAt(optIdx)"
+                                    class="text-gray-300 hover:text-danger text-lg leading-none">×</button>
+                        }
+                    </div>
+                }
+                <button @onclick="() => mc.Options.Add(new BMcOption())"
+                        class="text-xs text-primary hover:underline mt-1">+ Add option</button>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Correct Answer</label>
+                <select @bind="mc.CorrectAnswer" class="@BuilderStyles.Input">
+                    <option value="">— select correct answer —</option>
+                    @for (int oi = 0; oi < mc.Options.Count; oi++)
+                    {
+                        var letter = ((char)('A' + oi)).ToString();
+                        <option value="@letter">@letter</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Explanation</label>
+                <textarea @bind="mc.Explanation" placeholder="Explain the correct answer…" rows="2" class="@BuilderStyles.Textarea"></textarea>
+            </div>
+        </div>
+    }
+    else if (Item is BScenario scenario)
+    {
+        <div class="space-y-2">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Scenario Name</label>
+                <input @bind="scenario.Name" placeholder="e.g. The Difficult Conversation" class="@BuilderStyles.Input" />
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Situation</label>
+                <textarea @bind="scenario.Situation" placeholder="Describe the situation the learner faces…" rows="4" class="@BuilderStyles.Textarea"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Options</label>
+                @for (int oi = 0; oi < scenario.Options.Count; oi++)
+                {
+                    var sOpt = scenario.Options[oi];
+                    var optLetter = ((char)('A' + oi)).ToString();
+                    var optIdx = oi;
+                    <div class="border border-gray-200 rounded-lg p-3 mb-2 bg-white">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-gray-500">Option @optLetter</span>
+                            @if (scenario.Options.Count > 2)
+                            {
+                                <button @onclick="() => scenario.Options.RemoveAt(optIdx)"
+                                        class="text-xs text-gray-400 hover:text-danger">Remove</button>
+                            }
+                        </div>
+                        <input @bind="sOpt.Text" placeholder="Option @optLetter description"
+                               class="@BuilderStyles.Input mb-1.5" />
+                        <textarea @bind="sOpt.Analysis" placeholder="Analysis / feedback for this option…" rows="2" class="@BuilderStyles.Textarea"></textarea>
+                    </div>
+                }
+                <button @onclick="() => scenario.Options.Add(new BScenarioOption())"
+                        class="text-xs text-primary hover:underline">+ Add option</button>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Correct Option</label>
+                <select @bind="scenario.CorrectOption" class="@BuilderStyles.Input">
+                    <option value="">— select best option —</option>
+                    @for (int oi = 0; oi < scenario.Options.Count; oi++)
+                    {
+                        var letter = ((char)('A' + oi)).ToString();
+                        <option value="@letter">Option @letter</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Key Insight (optional)</label>
+                <textarea @bind="scenario.KeyInsight" placeholder="Key takeaway from this scenario…" rows="2" class="@BuilderStyles.Textarea"></textarea>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public BContentItem Item { get; set; } = null!;
+    [Parameter] public EventCallback OnRemove { get; set; }
+}

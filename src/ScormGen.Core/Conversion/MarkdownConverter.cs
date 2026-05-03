@@ -53,7 +53,7 @@ public class MarkdownConverter
     {
         var (fields, i) = ParseFrontmatter(lines);
 
-        foreach (var req in new[] { "course_id", "title" })
+        foreach (var req in new[] { JsonKeys.CourseId, JsonKeys.Title })
         {
             if (!fields.TryGetValue(req, out var v) || string.IsNullOrWhiteSpace(v))
                 throw new FormatException($"Frontmatter missing required field: {req}");
@@ -89,14 +89,14 @@ public class MarkdownConverter
 
             var pkg = new Dictionary<string, object?>
             {
-                ["file_number"]  = pkgNum,
-                ["file_name"]    = fileName,
-                ["content_type"] = contentType,
-                ["title"]        = pkgTitle,
-                ["content"]      = content,
+                [JsonKeys.FileNumber]  = pkgNum,
+                [JsonKeys.FileName]    = fileName,
+                [JsonKeys.ContentType] = contentType,
+                [JsonKeys.Title]       = pkgTitle,
+                [JsonKeys.Content]     = content,
             };
             if (contentType == "graded")
-                pkg["passing_score"] = passingScore;
+                pkg[JsonKeys.PassingScore] = passingScore;
 
             packages.Add(pkg);
             pkgNum++;
@@ -104,10 +104,10 @@ public class MarkdownConverter
 
         return new Dictionary<string, object?>
         {
-            ["course_id"] = fields["course_id"],
-            ["title"]     = fields["title"],
-            ["version"]   = fields.TryGetValue("version", out var ver) ? ver : "1.0",
-            ["packages"]  = packages,
+            [JsonKeys.CourseId] = fields[JsonKeys.CourseId],
+            [JsonKeys.Title]    = fields[JsonKeys.Title],
+            [JsonKeys.Version]  = fields.TryGetValue(JsonKeys.Version, out var ver) ? ver : "1.0",
+            [JsonKeys.Packages] = packages,
         };
     }
 
@@ -154,14 +154,14 @@ public class MarkdownConverter
             if (pendingPara.Count == 0) return;
             var text = string.Join(" ", pendingPara).Trim();
             if (text.Length > 0)
-                content.Add(new() { ["type"] = "paragraph", ["text"] = text });
+                content.Add(new() { [JsonKeys.Type] = JsonKeys.TypeParagraph, [JsonKeys.Text] = text });
             pendingPara.Clear();
         }
 
         void EmitBullets()
         {
             if (pendingBullets.Count == 0) return;
-            content.Add(new() { ["type"] = "bulleted_list", ["items"] = new List<string>(pendingBullets) });
+            content.Add(new() { [JsonKeys.Type] = JsonKeys.TypeBulletedList, [JsonKeys.Items] = new List<string>(pendingBullets) });
             pendingBullets.Clear();
         }
 
@@ -183,7 +183,7 @@ public class MarkdownConverter
             if (h3m.Success)
             {
                 EmitParagraph(); EmitBullets();
-                content.Add(new() { ["type"] = "heading", ["level"] = "h3", ["text"] = h3m.Groups[1].Value.Trim() });
+                content.Add(new() { [JsonKeys.Type] = JsonKeys.TypeHeading, [JsonKeys.Level] = "h3", [JsonKeys.Text] = h3m.Groups[1].Value.Trim() });
                 i++; continue;
             }
 
@@ -191,7 +191,7 @@ public class MarkdownConverter
             if (h4m.Success)
             {
                 EmitParagraph(); EmitBullets();
-                content.Add(new() { ["type"] = "heading", ["level"] = "h4", ["text"] = h4m.Groups[1].Value.Trim() });
+                content.Add(new() { [JsonKeys.Type] = JsonKeys.TypeHeading, [JsonKeys.Level] = "h4", [JsonKeys.Text] = h4m.Groups[1].Value.Trim() });
                 i++; continue;
             }
 
@@ -282,10 +282,10 @@ public class MarkdownConverter
             if (optm.Success)
             {
                 if (currentOpt != null) options.Add(currentOpt);
-                currentOpt = new() { ["letter"] = optm.Groups[1].Value, ["text"] = optm.Groups[2].Value.Trim(), ["analysis"] = "" };
+                currentOpt = new() { [JsonKeys.Letter] = optm.Groups[1].Value, [JsonKeys.Text] = optm.Groups[2].Value.Trim(), [JsonKeys.Analysis] = "" };
             }
             else if (anlm.Success && currentOpt != null)
-                currentOpt["analysis"] = anlm.Groups[1].Value.Trim();
+                currentOpt[JsonKeys.Analysis] = anlm.Groups[1].Value.Trim();
             else if (corrm.Success)
             {
                 if (currentOpt != null) { options.Add(currentOpt); currentOpt = null; }
@@ -306,12 +306,12 @@ public class MarkdownConverter
 
         return (new Dictionary<string, object?>
         {
-            ["type"]           = "scenario",
-            ["name"]           = scenarioName,
-            ["situation"]      = situation,
-            ["options"]        = options,
-            ["correct_option"] = correctOption,
-            ["key_insight"]    = keyInsight,
+            [JsonKeys.Type]          = JsonKeys.TypeScenario,
+            [JsonKeys.Name]          = scenarioName,
+            [JsonKeys.Situation]     = situation,
+            [JsonKeys.Options]       = options,
+            [JsonKeys.CorrectOption] = correctOption,
+            [JsonKeys.KeyInsight]    = keyInsight,
         }, i);
     }
 
@@ -344,7 +344,7 @@ public class MarkdownConverter
             var explm = ExplanationRx.Match(line);
 
             if (optm.Success)
-                options.Add(new() { ["letter"] = optm.Groups[1].Value, ["text"] = optm.Groups[2].Value.Trim() });
+                options.Add(new() { [JsonKeys.Letter] = optm.Groups[1].Value, [JsonKeys.Text] = optm.Groups[2].Value.Trim() });
             else if (corrm.Success)
                 correctAnswer = corrm.Groups[1].Value;
             else if (explm.Success)
@@ -374,11 +374,11 @@ public class MarkdownConverter
 
         return (new Dictionary<string, object?>
         {
-            ["type"]           = "multiple_choice",
-            ["question"]       = question,
-            ["options"]        = options,
-            ["correct_answer"] = correctAnswer,
-            ["explanation"]    = explanation,
+            [JsonKeys.Type]          = JsonKeys.TypeMultipleChoice,
+            [JsonKeys.Question]      = question,
+            [JsonKeys.Options]       = options,
+            [JsonKeys.CorrectAnswer] = correctAnswer,
+            [JsonKeys.Explanation]   = explanation,
         }, i);
     }
 

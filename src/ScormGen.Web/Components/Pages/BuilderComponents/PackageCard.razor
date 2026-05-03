@@ -1,0 +1,87 @@
+@namespace ScormGen.Web.Components.Pages.BuilderComponents
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer select-none"
+         @onclick="() => Package.Expanded = !Package.Expanded">
+        <span class="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center flex-shrink-0">@(Index + 1)</span>
+        <span class="flex-1 font-medium text-sm text-gray-800 truncate">
+            @(string.IsNullOrWhiteSpace(Package.Title) ? "(untitled package)" : Package.Title)
+        </span>
+        <span class="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded-full">@Package.ContentType</span>
+        <button @onclick:stopPropagation="true" @onclick="OnRemove"
+                class="text-xs text-gray-400 hover:text-danger transition-colors">Remove</button>
+        <span class="text-gray-300 text-xs ml-1">@(Package.Expanded ? "▲" : "▼")</span>
+    </div>
+
+    @if (Package.Expanded)
+    {
+        <div class="p-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">File Name (no spaces)</label>
+                    <input @bind="Package.FileName" placeholder="PKG1_INTRO" class="@BuilderStyles.Input" />
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Content Type</label>
+                    <select @bind="Package.ContentType" @bind:after="() => Package.Content.Clear()" class="@BuilderStyles.Input">
+                        <option value="informational">Informational</option>
+                        <option value="ungraded">Ungraded (Quiz / Scenario)</option>
+                        <option value="graded">Graded Assessment</option>
+                    </select>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Package Title</label>
+                    <input @bind="Package.Title" placeholder="Module 1: Introduction" class="@BuilderStyles.Input" />
+                </div>
+                @if (Package.ContentType == "graded")
+                {
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Passing Score (%)</label>
+                        <input @bind="Package.PassingScorePercent" type="number" min="0" max="100" class="@BuilderStyles.Input" />
+                    </div>
+                }
+            </div>
+
+            @if (Package.Content.Count > 0)
+            {
+                <div class="space-y-3 mb-6">
+                    @for (int ci = 0; ci < Package.Content.Count; ci++)
+                    {
+                        var cIdx = ci;
+                        <ContentItemEditor Item="Package.Content[ci]"
+                                           OnRemove="@(() => OnRemoveContent.InvokeAsync(cIdx))" />
+                    }
+                </div>
+            }
+
+            <div class="flex flex-wrap gap-2">
+                @if (Package.ContentType == "informational")
+                {
+                    <button @onclick="@(() => OnAddContent.InvokeAsync(new BHeading()))" class="@BuilderStyles.AddBtn">+ Heading</button>
+                    <button @onclick="@(() => OnAddContent.InvokeAsync(new BParagraph()))" class="@BuilderStyles.AddBtn">+ Paragraph</button>
+                    <button @onclick="@(() => OnAddContent.InvokeAsync(new BBulletedList()))" class="@BuilderStyles.AddBtn">+ Bullet List</button>
+                }
+                else if (Package.ContentType == "ungraded")
+                {
+                    <button @onclick="@(() => OnAddContent.InvokeAsync(new BMultipleChoice()))" class="@BuilderStyles.AddBtn">+ Question</button>
+                    @if (!Package.Content.OfType<BScenario>().Any())
+                    {
+                        <button @onclick="@(() => OnAddContent.InvokeAsync(new BScenario()))" class="@BuilderStyles.AddBtn">+ Scenario</button>
+                    }
+                }
+                else if (Package.ContentType == "graded")
+                {
+                    <button @onclick="@(() => OnAddContent.InvokeAsync(new BMultipleChoice()))" class="@BuilderStyles.AddBtn">+ Question</button>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public BPackage Package { get; set; } = null!;
+    [Parameter, EditorRequired] public int Index { get; set; }
+    [Parameter] public EventCallback OnRemove { get; set; }
+    [Parameter] public EventCallback<BContentItem> OnAddContent { get; set; }
+    [Parameter] public EventCallback<int> OnRemoveContent { get; set; }
+}
