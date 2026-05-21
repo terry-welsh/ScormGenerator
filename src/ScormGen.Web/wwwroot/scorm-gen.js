@@ -17,5 +17,8 @@ window.scormGen = {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    },
+    copyText: async function (content) {
+        await navigator.clipboard.writeText(content);
     }
 };

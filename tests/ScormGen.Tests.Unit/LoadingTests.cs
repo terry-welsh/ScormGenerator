@@ -30,6 +30,7 @@ public class LoadingTests
 
         Assert.Equal("Test Course", course.Title);
         Assert.Equal("TEST", course.CourseId);
+        Assert.Equal(ScormFormat.Scorm2004, course.Format);
         Assert.Single(course.Packages);
         Assert.Equal("TEST_PKG1", course.Packages[0].FileName);
     }

@@ -1,0 +1,482 @@
+@page "/content-prep"
+@namespace ScormGen.Web.Components.Pages
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@using Microsoft.Extensions.Caching.Memory
+@using ScormGen.Core.Loading
+@using ScormGen.Core.Packaging
+@inject IMemoryCache DownloadCache
+@inject IJSRuntime JS
+
+<PageTitle>SCORM Generator - Content Prep</PageTitle>
+
+<div class="max-w-3xl mx-auto">
+    <h1 class="text-2xl font-bold mb-2">Content Prep Utility</h1>
+    <p class="text-gray-500 mb-6 text-sm">
+        Point a local model or agent at Markdown source content, paste its JSON here, then validate and export it for the SCORM generator.
+    </p>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-base font-semibold mb-2 text-gray-800">How to Use This Utility</h2>
+        <ol class="list-decimal pl-5 text-sm text-gray-600 space-y-2">
+            <li>Prepare the source lesson as Markdown. Use module headings, topic headings, bullet lists, scenario blocks, and question blocks to show structure.</li>
+            <li>Paste the Markdown into the source field, or point your local model or agent at the Markdown file.</li>
+            <li>Copy the generated prompt and use it with the local model or another model you can access.</li>
+            <li>Ask the model to return only JSON. Paste that response into the model output field below.</li>
+            <li>Select <span class="font-medium text-gray-700">Clean &amp; Validate JSON</span>. The utility will remove common code fences, format the JSON, and check it against the package schema.</li>
+            <li>Download the validated JSON or generate the SCORM ZIP directly from this page.</li>
+        </ol>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-base font-semibold mb-4 text-gray-800">Prompt Builder</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Course ID</label>
+                <input @bind="_courseId" placeholder="COURSE_001" class="@InputClass" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Course Title</label>
+                <input @bind="_courseTitle" placeholder="Introduction to Safety" class="@InputClass" />
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Audience</label>
+                <input @bind="_audience" placeholder="New managers, field technicians, sales team..." class="@InputClass" />
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Source Markdown</label>
+                <textarea @bind="_sourceContent" rows="10" placeholder="Paste Markdown source content here, or tell your local agent which .md file to read." class="@TextareaClass font-mono text-xs"></textarea>
+            </div>
+        </div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">Prompt to Use With Your Model</label>
+        <textarea readonly rows="18" value="@PromptText" class="@TextareaClass font-mono text-xs"></textarea>
+        <div class="flex flex-wrap gap-3 mt-3">
+            <button @onclick="CopyPrompt" class="@SecondaryButtonClass">Copy Prompt</button>
+            <button @onclick="LoadExampleMarkdown" class="@SecondaryButtonClass">Load Example Markdown</button>
+            <button @onclick="LoadExampleJson" class="@SecondaryButtonClass">Load Example JSON</button>
+        </div>
+        @if (_copiedPrompt)
+        {
+            <p class="mt-2 text-sm text-success">Prompt copied.</p>
+        }
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-base font-semibold mb-4 text-gray-800">Model Output</h2>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Load Generated JSON File</label>
+        <InputFile OnChange="HandleJsonFileSelected" accept=".json"
+                   class="mb-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">Course JSON</label>
+        <textarea @bind="_jsonInput" rows="20" placeholder="Paste the model's JSON response here." class="@TextareaClass font-mono text-xs"></textarea>
+
+        @if (_message is not null)
+        {
+            <div class="@MessageClass">@_message</div>
+        }
+
+        <div class="flex flex-wrap gap-3 mt-4">
+            <button @onclick="ValidateJson" class="@PrimaryButtonClass">Clean &amp; Validate JSON</button>
+            <button @onclick="ExportJson" disabled="@(!_isValid)" class="@SecondaryButtonClass disabled:opacity-50 disabled:cursor-not-allowed">Download JSON</button>
+            <button @onclick="Generate" disabled="@(!_isValid || _generating)" class="@PrimaryButtonClass disabled:opacity-50 disabled:cursor-not-allowed">
+                @(_generating ? "Generating..." : "Generate SCORM Package")
+            </button>
+        </div>
+
+        @if (_downloadReady)
+        {
+            <div class="mt-4 p-3 bg-success/10 border border-success/20 rounded-lg text-sm text-success font-medium">
+                Package ready - download started automatically.
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private const string InputClass = "w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50";
+    private const string TextareaClass = "w-full border border-gray-300 rounded-lg px-4 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/50";
+    private const string PrimaryButtonClass = "py-2 px-4 rounded-lg font-semibold text-white bg-primary hover:bg-success transition-colors text-sm";
+    private const string SecondaryButtonClass = "py-2 px-4 rounded-lg font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors text-sm";
+
+    private string _courseId = "COURSE_001";
+    private string _courseTitle = "";
+    private string _audience = "";
+    private string _sourceContent = "";
+    private string _jsonInput = "";
+    private string? _message;
+    private bool _messageIsError;
+    private bool _isValid;
+    private bool _generating;
+    private bool _downloadReady;
+    private bool _copiedPrompt;
+
+    private string MessageClass =>
+        _messageIsError
+            ? "mt-3 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger"
+            : "mt-3 p-3 bg-success/10 border border-success/20 rounded-lg text-sm text-success";
+
+    private string PromptText => $$"""
+        You are a SCORM course content structuring agent.
+
+        Transform Markdown source content into valid JSON for the SCORM Generator tool.
+
+        Source handling:
+        - The source content is Markdown.
+        - If you are running as a local agent and I point you at a .md file, read that file first and use it as the source.
+        - Use Markdown syntax to infer course structure, package boundaries, headings, paragraphs, lists, scenarios, and questions.
+        - Preserve the instructional meaning of the Markdown. Do not invent unsupported facts.
+
+        Package granularity:
+        - Create one SCORM package for each topic under each module.
+        - Do not create one package per module when that module contains multiple topics.
+        - Treat module headings as grouping context. Treat topic headings as the primary package boundaries.
+        - If the Markdown has a hierarchy like Module 1 > Topic 1.1, Topic 1.2, Topic 1.3, create separate packages for Topic 1.1, Topic 1.2, and Topic 1.3.
+        - If there are 6 modules and each module contains 4 topics, the JSON should contain 24 packages.
+        - If explicit package markers exist only at the module level, split the module into topic-level packages anyway.
+        - If explicit package markers exist at the topic level, use those markers directly.
+        - Each package title should include both the module and topic context, such as "Module 1.1: The Trust Foundation - Topic 1.1.1: Proving You Care About Client Problems".
+        - Each package file_name should identify the module and topic, such as "COURSE_001_M1_1_T1_1_1".
+        - Preserve the topic's internal content order inside that topic package.
+        - If a topic contains scenario or question blocks, include them in that topic's package unless the Markdown clearly labels them as a separate topic-level scenario or assessment.
+
+        Markdown syntax to recognize:
+        - YAML frontmatter can provide course_id, title, and version.
+        - Package markers may appear as: ## Package: FILE_NAME | informational | Package Title
+        - Package content_type must be informational, ungraded, or graded.
+        - A graded package may include: passing_score: 0.8
+        - Markdown module headings may look like "# Module 1", "## Module 1.1", or "## Module 1.1: Module Title".
+        - Markdown topic headings may look like "### Topic 1.1.1: Topic Title", "## Topic 1.1.1: Topic Title", or similar.
+        - Markdown headings become heading items. Prefer h3 for topic headings and h4 for topic subsections in the JSON.
+        - Plain paragraphs become paragraph items.
+        - Markdown bullet lists become bulleted_list items.
+        - Scenario blocks may use: **Scenario:**, **Situation:**, lettered options like - A), **Analysis:**, Correct: X, and Key Insight:.
+        - Question blocks may use: **Question:**, lettered options like - A), Correct: X, and Explanation:.
+        - If the Markdown does not include explicit topic package markers, infer topic-level packages from the module/topic heading structure.
+
+        Output rules:
+        - Output only JSON.
+        - Do not wrap the JSON in Markdown code fences.
+        - Do not include comments, explanations, or prose outside the JSON.
+        - Use snake_case property names exactly as shown.
+        - Use "format": "scorm_2004" for SCORM 2004 3rd Edition unless I explicitly ask for "scorm_12".
+        - Create one package per topic under each module.
+        - Use content_type values only: "informational", "ungraded", or "graded".
+        - Use content item types only: "heading", "paragraph", "bulleted_list", "scenario", or "multiple_choice".
+        - For graded packages, include passing_score as a decimal such as 0.8.
+        - Multiple-choice options must use letters A, B, C, D.
+        - correct_answer must match one multiple-choice option letter.
+        - Scenario options must use letters A, B, C, and optionally D.
+        - correct_option must match one scenario option letter.
+        - Keep package file_name values uppercase, short, and safe for filenames.
+
+        Required top-level JSON shape:
+        {
+          "course_id": "{{SafePromptValue(_courseId, "COURSE_001")}}",
+          "title": "{{SafePromptValue(_courseTitle, "Course Title")}}",
+          "version": "1.0",
+          "format": "scorm_2004",
+          "packages": [
+            {
+              "file_number": 1,
+              "file_name": "COURSE_001_MODULE_1",
+              "content_type": "informational",
+              "title": "Module Title",
+              "content": [
+                { "type": "heading", "level": "h3", "text": "Section Title" },
+                { "type": "paragraph", "text": "Paragraph text." },
+                { "type": "bulleted_list", "items": ["First point", "Second point"] }
+              ]
+            }
+          ]
+        }
+
+        Content item examples:
+        {
+          "type": "scenario",
+          "name": "Scenario Name",
+          "situation": "A realistic workplace situation.",
+          "options": [
+            { "letter": "A", "text": "Option text.", "analysis": "Why this option is weak or strong." },
+            { "letter": "B", "text": "Option text.", "analysis": "Why this option is weak or strong." },
+            { "letter": "C", "text": "Option text.", "analysis": "Why this option is weak or strong." }
+          ],
+          "correct_option": "C",
+          "key_insight": "The main learning point."
+        }
+
+        {
+          "type": "multiple_choice",
+          "question": "Question text?",
+          "options": [
+            { "letter": "A", "text": "Answer option." },
+            { "letter": "B", "text": "Answer option." },
+            { "letter": "C", "text": "Answer option." },
+            { "letter": "D", "text": "Answer option." }
+          ],
+          "correct_answer": "B",
+          "explanation": "Why the correct answer is correct."
+        }
+
+        Course details:
+        - Course ID: {{SafePromptValue(_courseId, "COURSE_001")}}
+        - Course title: {{SafePromptValue(_courseTitle, "Course Title")}}
+        - Audience: {{SafePromptValue(_audience, "General learners")}}
+
+        Source Markdown:
+        {{SafePromptValue(_sourceContent, "[Paste the Markdown source content here, or point your local agent at the .md file.]")}}
+        """;
+
+    private static string SafePromptValue(string value, string fallback)
+    {
+        var resolved = string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+        return resolved.Replace("\"", "\\\"", StringComparison.Ordinal);
+    }
+
+    private async Task CopyPrompt()
+    {
+        await JS.InvokeVoidAsync("scormGen.copyText", PromptText);
+        _copiedPrompt = true;
+    }
+
+    private void LoadExampleMarkdown()
+    {
+        _sourceContent = ExampleMarkdown;
+        _copiedPrompt = false;
+    }
+
+    private async Task HandleJsonFileSelected(InputFileChangeEventArgs e)
+    {
+        _isValid = false;
+        _downloadReady = false;
+        _message = null;
+
+        try
+        {
+            var file = e.File;
+            using var stream = file.OpenReadStream(maxAllowedSize: 16 * 1024 * 1024);
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            _jsonInput = await reader.ReadToEndAsync();
+            _messageIsError = false;
+            _message = $"Loaded '{file.Name}'. Select Clean & Validate JSON to check it.";
+        }
+        catch (Exception ex)
+        {
+            _jsonInput = "";
+            _messageIsError = true;
+            _message = $"Could not load JSON file: {ex.Message}";
+        }
+    }
+
+    private void LoadExampleJson()
+    {
+        _jsonInput = ExampleJson;
+        _isValid = false;
+        _downloadReady = false;
+        _message = "Example JSON loaded. Select Clean & Validate JSON to check it.";
+        _messageIsError = false;
+    }
+
+    private void ValidateJson()
+    {
+        _downloadReady = false;
+        try
+        {
+            var normalized = NormalizeJsonInput(_jsonInput);
+            var parsed = JsonNode.Parse(normalized)
+                ?? throw new ArgumentException("JSON must be a top-level object.");
+            var formatted = parsed.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+
+            var course = CourseLoader.Load(formatted);
+            _jsonInput = formatted;
+            _isValid = true;
+            _messageIsError = false;
+            _message = $"Valid course JSON. Course '{course.Title}' contains {course.Packages.Count} package(s).";
+        }
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
+        {
+            _isValid = false;
+            _messageIsError = true;
+            _message = ex is JsonException
+                ? $"Malformed JSON: {ex.Message}"
+                : ex.Message;
+        }
+    }
+
+    private async Task ExportJson()
+    {
+        var course = GetValidatedCourse();
+        if (course is null) return;
+
+        var filename = string.IsNullOrWhiteSpace(course.CourseId)
+            ? "course.json"
+            : $"{course.CourseId.ToLowerInvariant()}.json";
+        await JS.InvokeVoidAsync("scormGen.downloadText", _jsonInput, filename, "application/json");
+    }
+
+    private async Task Generate()
+    {
+        var course = GetValidatedCourse();
+        if (course is null) return;
+
+        _generating = true;
+        _downloadReady = false;
+        try
+        {
+            var zipBytes = ScormPackager.PackageCourse(course);
+            var id = Guid.NewGuid().ToString("N");
+            DownloadCache.Set($"dl_{id}", zipBytes, TimeSpan.FromMinutes(5));
+            await JS.InvokeVoidAsync("scormGen.triggerDownload", $"/download/{id}");
+            _downloadReady = true;
+        }
+        catch (Exception ex)
+        {
+            _isValid = false;
+            _messageIsError = true;
+            _message = $"Generation failed: {ex.Message}";
+        }
+        finally
+        {
+            _generating = false;
+        }
+    }
+
+    private ScormGen.Core.Models.Course? GetValidatedCourse()
+    {
+        try
+        {
+            var course = CourseLoader.Load(_jsonInput);
+            _isValid = true;
+            return course;
+        }
+        catch (ArgumentException ex)
+        {
+            _isValid = false;
+            _messageIsError = true;
+            _message = ex.Message;
+            return null;
+        }
+    }
+
+    private static string NormalizeJsonInput(string input)
+    {
+        var text = input.Trim();
+        if (text.Length == 0)
+            throw new ArgumentException("Paste JSON into the Course JSON field or load a generated .json file before validating.");
+
+        if (text.StartsWith("```", StringComparison.Ordinal))
+        {
+            var firstLineEnd = text.IndexOf('\n', StringComparison.Ordinal);
+            var lastFence = text.LastIndexOf("```", StringComparison.Ordinal);
+            if (firstLineEnd >= 0 && lastFence > firstLineEnd)
+                text = text[(firstLineEnd + 1)..lastFence].Trim();
+        }
+
+        var firstBrace = text.IndexOf('{', StringComparison.Ordinal);
+        var lastBrace = text.LastIndexOf('}');
+        if (firstBrace >= 0 && lastBrace > firstBrace)
+            text = text[firstBrace..(lastBrace + 1)];
+
+        return text;
+    }
+
+    private const string ExampleJson = """
+        {
+          "course_id": "SAFETY_101",
+          "title": "Safety Basics",
+          "version": "1.0",
+          "format": "scorm_2004",
+          "packages": [
+            {
+              "file_number": 1,
+              "file_name": "SAFETY_101_INTRO",
+              "content_type": "informational",
+              "title": "Safety Basics: Introduction",
+              "content": [
+                {
+                  "type": "heading",
+                  "level": "h3",
+                  "text": "Why Safety Basics Matter"
+                },
+                {
+                  "type": "paragraph",
+                  "text": "Safety basics help teams recognize common hazards, pause before risky work, and report concerns before incidents occur."
+                },
+                {
+                  "type": "bulleted_list",
+                  "items": [
+                    "Recognize common hazards",
+                    "Follow local procedures",
+                    "Report unsafe conditions promptly"
+                  ]
+                }
+              ]
+            },
+            {
+              "file_number": 2,
+              "file_name": "SAFETY_101_CHECK",
+              "content_type": "ungraded",
+              "title": "Safety Basics: Knowledge Check",
+              "content": [
+                {
+                  "type": "multiple_choice",
+                  "question": "What should you do when you notice an unsafe condition?",
+                  "options": [
+                    { "letter": "A", "text": "Ignore it if no one is nearby" },
+                    { "letter": "B", "text": "Report it through the appropriate local process" },
+                    { "letter": "C", "text": "Wait until the next team meeting" },
+                    { "letter": "D", "text": "Only mention it if someone is injured" }
+                  ],
+                  "correct_answer": "B",
+                  "explanation": "Unsafe conditions should be reported promptly so they can be corrected before an incident occurs."
+                }
+              ]
+            }
+          ]
+        }
+        """;
+
+    private const string ExampleMarkdown = """
+        ---
+        course_id: SAFETY_101
+        title: Safety Basics
+        version: 1.0
+        ---
+
+        ## Module 1: Safety Basics
+
+        ### Topic 1.1: Why Safety Basics Matter
+
+        Safety basics help teams recognize common hazards, pause before risky work, and report concerns before incidents occur.
+
+        - Recognize common hazards
+        - Follow local procedures
+        - Report unsafe conditions promptly
+
+        ### Topic 1.2: Responding to Blocked Exits
+
+        **Scenario:** A Blocked Exit
+
+        **Situation:** You notice boxes stacked in front of an emergency exit before the start of a shift.
+
+        - A) Move the boxes yourself without telling anyone.
+          **Analysis:** This may fix the immediate issue, but it does not create visibility or accountability.
+        - B) Ignore it because the shift has not started.
+          **Analysis:** This leaves a known hazard in place.
+        - C) Report the blocked exit through the local process and make sure the area is addressed.
+          **Analysis:** This is the strongest response because it fixes the hazard and creates a record.
+
+        Correct: C
+        Key Insight: Hazards should be reported promptly so they can be corrected before an incident occurs.
+
+        ### Topic 1.3: Knowledge Check
+
+        **Question:** What should you do when you notice an unsafe condition?
+        - A) Ignore it if no one is nearby
+        - B) Report it through the appropriate local process
+        - C) Wait until the next team meeting
+        - D) Only mention it if someone is injured
+        Correct: B
+        Explanation: Unsafe conditions should be reported promptly so they can be corrected before an incident occurs.
+        """;
+}
